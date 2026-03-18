@@ -15,6 +15,9 @@ import {
   Shield,
   Loader2,
   ArrowRight,
+  AlertTriangle,
+  AlertCircle,
+  Info,
 } from 'lucide-react';
 import Link from 'next/link';
 import { api } from '@/lib/api';
@@ -22,6 +25,9 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { ScoreBadge, getScoreColorHex } from '@/components/reports/score-badge';
+import { RadarChart } from '@/components/reports/radar-chart';
+import { useAssessment } from '@/hooks/use-assessment';
 import type { IntakeStatus } from '@/types';
 
 const stageInfo = [
@@ -38,13 +44,19 @@ const statusStyles: Record<string, { variant: 'default' | 'secondary' | 'outline
 };
 
 const moduleCards = [
-  { label: 'Gene Structure', href: '/gene', icon: Dna, stage: '1', description: 'Founder, industry, product differentiation analysis' },
-  { label: 'Business Model', href: '/business-model', icon: Blocks, stage: '1', description: 'Revenue model and business viability' },
-  { label: 'Valuation', href: '/valuation', icon: TrendingUp, stage: '2', description: 'Company valuation methodology' },
-  { label: 'Financing', href: '/financing', icon: Banknote, stage: '2', description: 'Capital structure and financing strategy' },
-  { label: 'Exit Mechanism', href: '/exit', icon: DoorOpen, stage: '3', description: 'Exit strategies and timelines' },
-  { label: 'Listing Standards', href: '/listing', icon: Shield, stage: '3', description: 'Exchange listing requirements' },
+  { label: 'Gene Structure', href: '/gene', icon: Dna, stage: '1', moduleNumber: 1, description: 'Founder, industry, product differentiation analysis' },
+  { label: 'Business Model', href: '/business-model', icon: Blocks, stage: '1', moduleNumber: 2, description: 'Revenue model and business viability' },
+  { label: 'Valuation', href: '/valuation', icon: TrendingUp, stage: '2', moduleNumber: 3, description: 'Company valuation methodology' },
+  { label: 'Financing', href: '/financing', icon: Banknote, stage: '2', moduleNumber: 4, description: 'Capital structure and financing strategy' },
+  { label: 'Exit Mechanism', href: '/exit', icon: DoorOpen, stage: '3', moduleNumber: 5, description: 'Exit strategies and timelines' },
+  { label: 'Listing Standards', href: '/listing', icon: Shield, stage: '3', moduleNumber: 6, description: 'Exchange listing requirements' },
 ];
+
+const capitalReadinessConfig = {
+  red: { label: 'Not Ready', colorClass: 'bg-red-500', textClass: 'text-red-700 dark:text-red-400' },
+  amber: { label: 'Conditional', colorClass: 'bg-amber-500', textClass: 'text-amber-700 dark:text-amber-400' },
+  green: { label: 'Ready', colorClass: 'bg-emerald-500', textClass: 'text-emerald-700 dark:text-emerald-400' },
+};
 
 export default function CompanyOverviewPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -58,6 +70,13 @@ export default function CompanyOverviewPage({ params }: { params: Promise<{ id: 
     queryKey: ['intake-stages', id],
     queryFn: () => api.intake.getAllStages(id),
   });
+
+  const {
+    assessment,
+    moduleScores,
+    flags,
+    isLoading: isLoadingAssessment,
+  } = useAssessment(id);
 
   if (isLoading) {
     return (
@@ -75,6 +94,30 @@ export default function CompanyOverviewPage({ params }: { params: Promise<{ id: 
       stageStatusMap.set(s.stage, s.status);
     }
   }
+
+  const hasAssessment = assessment && assessment.overall_score != null;
+
+  // Build radar data from scored modules
+  const radarData = moduleScores.length > 0
+    ? moduleScores.map((m) => ({
+        name: m.module_name.length > 14 ? m.module_name.slice(0, 12) + '...' : m.module_name,
+        score: m.total_score,
+        fullMark: 100,
+      }))
+    : moduleCards.map((m) => ({
+        name: m.label,
+        score: 0,
+        fullMark: 100,
+      }));
+
+  // Flag counts by severity
+  const flagCounts = {
+    critical: flags.filter((f) => f.severity === 'critical').length,
+    high: flags.filter((f) => f.severity === 'high').length,
+    medium: flags.filter((f) => f.severity === 'medium').length,
+    low: flags.filter((f) => f.severity === 'low').length,
+  };
+  const totalFlags = flags.length;
 
   return (
     <div className="space-y-6">
@@ -155,6 +198,113 @@ export default function CompanyOverviewPage({ params }: { params: Promise<{ id: 
         </CardContent>
       </Card>
 
+      {/* Assessment Overview (if exists) */}
+      {hasAssessment && (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {/* Overall Score */}
+          <Card>
+            <CardContent className="pt-6">
+              <p className="text-xs font-medium text-muted-foreground mb-2">Overall Score</p>
+              <div className="flex items-center gap-3">
+                <ScoreBadge score={assessment.overall_score!} rating={assessment.overall_rating} size="lg" />
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Capital Readiness */}
+          <Card>
+            <CardContent className="pt-6">
+              <p className="text-xs font-medium text-muted-foreground mb-2">Capital Readiness</p>
+              {assessment.capital_readiness ? (
+                <div className="flex items-center gap-3">
+                  {/* Traffic light */}
+                  <div className="flex items-center gap-1.5">
+                    {(['red', 'amber', 'green'] as const).map((color) => (
+                      <div
+                        key={color}
+                        className={`h-5 w-5 rounded-full transition-all ${
+                          assessment.capital_readiness === color
+                            ? capitalReadinessConfig[color].colorClass
+                            : 'bg-muted'
+                        }`}
+                      />
+                    ))}
+                  </div>
+                  <span className={`text-sm font-semibold ${capitalReadinessConfig[assessment.capital_readiness].textClass}`}>
+                    {capitalReadinessConfig[assessment.capital_readiness].label}
+                  </span>
+                </div>
+              ) : (
+                <span className="text-sm text-muted-foreground">Pending</span>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Enterprise Stage */}
+          <Card>
+            <CardContent className="pt-6">
+              <p className="text-xs font-medium text-muted-foreground mb-2">Enterprise Stage</p>
+              {assessment.enterprise_stage_classification ? (
+                <Badge variant="secondary" className="text-sm">
+                  {assessment.enterprise_stage_classification}
+                </Badge>
+              ) : (
+                <span className="text-sm text-muted-foreground">Pending</span>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Flags Summary */}
+          <Card>
+            <CardContent className="pt-6">
+              <p className="text-xs font-medium text-muted-foreground mb-2">Auto-Flags</p>
+              {totalFlags > 0 ? (
+                <div className="flex items-center gap-2 flex-wrap">
+                  {flagCounts.critical > 0 && (
+                    <span className="inline-flex items-center gap-1 text-xs font-semibold bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400 rounded-full px-2 py-0.5">
+                      <AlertTriangle className="h-3 w-3" />
+                      {flagCounts.critical}
+                    </span>
+                  )}
+                  {flagCounts.high > 0 && (
+                    <span className="inline-flex items-center gap-1 text-xs font-semibold bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400 rounded-full px-2 py-0.5">
+                      <AlertTriangle className="h-3 w-3" />
+                      {flagCounts.high}
+                    </span>
+                  )}
+                  {flagCounts.medium > 0 && (
+                    <span className="inline-flex items-center gap-1 text-xs font-semibold bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400 rounded-full px-2 py-0.5">
+                      <AlertCircle className="h-3 w-3" />
+                      {flagCounts.medium}
+                    </span>
+                  )}
+                  {flagCounts.low > 0 && (
+                    <span className="inline-flex items-center gap-1 text-xs font-semibold bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400 rounded-full px-2 py-0.5">
+                      <Info className="h-3 w-3" />
+                      {flagCounts.low}
+                    </span>
+                  )}
+                </div>
+              ) : (
+                <span className="text-sm text-muted-foreground">None</span>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Module Radar Chart (if assessment exists) */}
+      {hasAssessment && moduleScores.length > 0 && (
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base">Module Score Overview</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <RadarChart data={radarData} />
+          </CardContent>
+        </Card>
+      )}
+
       {/* Stage Progress */}
       <div>
         <h2 className="mb-4 text-lg font-semibold">Intake Progress</h2>
@@ -194,6 +344,7 @@ export default function CompanyOverviewPage({ params }: { params: Promise<{ id: 
             const Icon = mod.icon;
             const requiredStageStatus = stageStatusMap.get(mod.stage);
             const isReady = requiredStageStatus === 'submitted' || requiredStageStatus === 'validated';
+            const moduleScore = moduleScores.find((m) => m.module_number === mod.moduleNumber);
 
             return (
               <Link key={mod.href} href={`/companies/${id}${mod.href}`} className="cursor-pointer block">
@@ -203,19 +354,22 @@ export default function CompanyOverviewPage({ params }: { params: Promise<{ id: 
                       <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10">
                         <Icon className="h-5 w-5 text-primary" />
                       </div>
-                      <div>
+                      <div className="flex-1 min-w-0">
                         <CardTitle className="text-sm">{mod.label}</CardTitle>
                         <p className="text-xs text-muted-foreground">
                           Requires Stage {mod.stage}
                         </p>
                       </div>
+                      {moduleScore && (
+                        <ScoreBadge score={moduleScore.total_score} size="sm" />
+                      )}
                     </div>
                   </CardHeader>
                   <CardContent>
                     <p className="text-xs text-muted-foreground">{mod.description}</p>
                     <div className="mt-3 flex items-center justify-between">
                       <Badge variant={isReady ? 'default' : 'outline'} className="text-[10px]">
-                        {isReady ? 'Ready' : 'No data yet'}
+                        {moduleScore ? moduleScore.rating : isReady ? 'Ready' : 'No data yet'}
                       </Badge>
                       <ArrowRight className="h-4 w-4 text-muted-foreground" />
                     </div>

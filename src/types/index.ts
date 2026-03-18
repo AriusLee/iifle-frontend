@@ -55,3 +55,48 @@ export interface DocumentRecord {
   stage?: string;
   created_at: string;
 }
+
+// Assessment types
+export interface Assessment {
+  id: string;
+  company_id: string;
+  trigger_stage: string;
+  status: 'pending' | 'scoring' | 'draft' | 'review' | 'approved' | 'archived';
+  overall_score: number | null;
+  overall_rating: string | null;
+  enterprise_stage_classification: string | null;
+  capital_readiness: 'red' | 'amber' | 'green' | null;
+  created_at: string;
+  module_scores?: ModuleScore[];
+}
+
+export interface ModuleScore {
+  id: string;
+  module_number: number;
+  module_name: string;
+  total_score: number;
+  rating: string;
+  weight: number;
+  dimensions?: DimensionScore[];
+}
+
+export interface DimensionScore {
+  id: string;
+  dimension_number: number;
+  dimension_name: string;
+  score: number;
+  weight: number;
+  scoring_method: string;
+  calculation_detail: Record<string, any>;
+  ai_reasoning: string | null;
+}
+
+export interface AutoFlag {
+  id: string;
+  flag_type: string;
+  severity: 'critical' | 'high' | 'medium' | 'low';
+  description: string;
+  source_field: string | null;
+  source_value: string | null;
+  is_resolved: boolean;
+}

@@ -20,21 +20,29 @@ export default function SettingsPage({ params }: { params: Promise<{ id: string 
     queryFn: () => api.companies.get(id),
   });
 
-  // API Key state (stored in localStorage for now, backend integration in Phase 2)
-  const [anthropicKey, setAnthropicKey] = useState(() =>
-    typeof window !== 'undefined' ? localStorage.getItem('anthropic_api_key') || '' : ''
-  );
+  // Load API key status from backend
+  const { data: keyStatus, refetch: refetchKeyStatus } = useQuery({
+    queryKey: ['api-key-status'],
+    queryFn: () => api.settings.getKeyStatus(),
+  });
+
+  const [anthropicKey, setAnthropicKey] = useState('');
   const [showAnthropicKey, setShowAnthropicKey] = useState(false);
   const [saving, setSaving] = useState(false);
 
   const handleSaveKeys = async () => {
+    if (!anthropicKey.trim()) {
+      toast.error('Please enter an API key');
+      return;
+    }
     setSaving(true);
     try {
-      if (typeof window !== 'undefined') {
-        if (anthropicKey) localStorage.setItem('anthropic_api_key', anthropicKey);
-        else localStorage.removeItem('anthropic_api_key');
-      }
-      toast.success('API key saved');
+      await api.settings.updateApiKeys(anthropicKey);
+      toast.success('API key saved and connected');
+      setAnthropicKey('');
+      refetchKeyStatus();
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to save API key');
     } finally {
       setSaving(false);
     }
@@ -163,10 +171,22 @@ export default function SettingsPage({ params }: { params: Promise<{ id: string 
                 </button>
               </div>
             </div>
+            {keyStatus?.anthropic_configured && !anthropicKey && (
+              <div className="space-y-1">
+                <p className="flex items-center gap-1 text-xs text-emerald-600">
+                  <CheckCircle2 className="h-3 w-3" />
+                  Key connected and active
+                </p>
+                {keyStatus.anthropic_key_hint && (
+                  <p className="font-mono text-xs text-muted-foreground">
+                    {keyStatus.anthropic_key_hint}
+                  </p>
+                )}
+              </div>
+            )}
             {anthropicKey && (
-              <p className="flex items-center gap-1 text-xs text-emerald-600">
-                <CheckCircle2 className="h-3 w-3" />
-                Key configured
+              <p className="flex items-center gap-1 text-xs text-amber-600">
+                Press Save to apply the new key
               </p>
             )}
           </div>
@@ -176,10 +196,22 @@ export default function SettingsPage({ params }: { params: Promise<{ id: string 
             due diligence research, document extraction, and the chat assistant.
           </p>
 
-          <Button onClick={handleSaveKeys} disabled={saving} className="cursor-pointer gap-2">
-            <Save className="h-4 w-4" />
-            {saving ? 'Saving...' : 'Save API Keys'}
-          </Button>
+          <div className="flex items-center gap-3">
+            <Button onClick={handleSaveKeys} disabled={saving} className="cursor-pointer gap-2">
+              <Save className="h-4 w-4" />
+              {saving ? 'Saving...' : anthropicKey ? 'Save API Key' : 'Update API Key'}
+            </Button>
+            {keyStatus?.anthropic_configured && (
+              <a
+                href="https://console.anthropic.com/settings/cost"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="cursor-pointer text-xs text-primary hover:underline"
+              >
+                View usage on Anthropic Console →
+              </a>
+            )}
+          </div>
         </CardContent>
       </Card>
     </div>

@@ -1,4 +1,4 @@
-import type { Company } from '@/types';
+import type { Company, Assessment, AutoFlag } from '@/types';
 import { getSession } from 'next-auth/react';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:2030/api/v1';
@@ -78,5 +78,38 @@ export const api = {
       fetchApi<{ download_url: string }>(
         `/companies/${companyId}/documents/${docId}/download-url`
       ),
+  },
+  chat: {
+    createConversation: (companyId: string, title?: string) =>
+      fetchApi<any>(`/companies/${companyId}/chat/conversations`, {
+        method: 'POST',
+        body: JSON.stringify({ title }),
+      }),
+    listConversations: (companyId: string) =>
+      fetchApi<any[]>(`/companies/${companyId}/chat/conversations`),
+    getMessages: (companyId: string, conversationId: string) =>
+      fetchApi<any[]>(
+        `/companies/${companyId}/chat/conversations/${conversationId}/messages`
+      ),
+    // sendMessage is handled directly with fetch+SSE in the chat panel, not via fetchApi
+  },
+  settings: {
+    getKeyStatus: () =>
+      fetchApi<{ anthropic_configured: boolean; anthropic_key_hint: string | null }>('/settings/api-keys'),
+    updateApiKeys: (anthropicKey: string) =>
+      fetchApi<any>('/settings/api-keys', {
+        method: 'PUT',
+        body: JSON.stringify({ anthropic_api_key: anthropicKey }),
+      }),
+  },
+  assessments: {
+    trigger: (companyId: string, stage: string) =>
+      fetchApi<Assessment>(`/companies/${companyId}/assess`, { method: 'POST', body: JSON.stringify({ stage }) }),
+    list: (companyId: string) =>
+      fetchApi<Assessment[]>(`/companies/${companyId}/assessments`),
+    get: (companyId: string, assessmentId: string) =>
+      fetchApi<Assessment>(`/companies/${companyId}/assessments/${assessmentId}`),
+    getFlags: (companyId: string, assessmentId: string) =>
+      fetchApi<AutoFlag[]>(`/companies/${companyId}/assessments/${assessmentId}/flags`),
   },
 };
