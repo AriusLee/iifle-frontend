@@ -1,0 +1,57 @@
+export interface User {
+  id: string;
+  email: string;
+  full_name: string;
+  phone?: string;
+  is_active: boolean;
+  created_at: string;
+}
+
+export type UserRole = 'admin' | 'advisor' | 'client';
+
+export interface Company {
+  id: string;
+  legal_name: string;
+  registration_number?: string;
+  date_of_incorporation?: string;
+  company_type?: string;
+  primary_industry?: string;
+  sub_industry?: string;
+  country: string;
+  website?: string;
+  brief_description?: string;
+  enterprise_stage?: string;
+  status: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export type IntakeStageNumber = '1' | '2' | '3';
+export type IntakeStatus = 'not_started' | 'in_progress' | 'submitted' | 'validated';
+
+export interface IntakeStage {
+  id: string;
+  company_id: string;
+  stage: IntakeStageNumber;
+  status: IntakeStatus;
+  data: Record<string, any>;
+  completed_sections: string[];
+  submitted_at?: string;
+}
+
+export interface TokenResponse {
+  access_token: string;
+  token_type: string;
+}
+
+export interface DocumentRecord {
+  id: string;
+  company_id: string;
+  category: string;
+  filename: string;
+  original_filename: string;
+  file_size: number;
+  mime_type: string;
+  stage?: string;
+  created_at: string;
+}
