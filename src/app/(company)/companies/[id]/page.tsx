@@ -1,7 +1,7 @@
 'use client';
 
-import { use } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { use, useState, useEffect, useCallback } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Building2,
   Globe,
@@ -18,8 +18,13 @@ import {
   AlertTriangle,
   AlertCircle,
   Info,
+  Sparkles,
+  RefreshCw,
+  CheckCircle2,
+  BrainCircuit,
 } from 'lucide-react';
 import Link from 'next/link';
+import { toast } from 'sonner';
 import { api } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -58,17 +63,31 @@ const capitalReadinessConfig = {
   green: { label: 'Ready', colorClass: 'bg-emerald-500', textClass: 'text-emerald-700 dark:text-emerald-400' },
 };
 
+type AiProcessingState = 'idle' | 'researching' | 'analyzing' | 'ready' | 'none';
+
 export default function CompanyOverviewPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
+  const queryClient = useQueryClient();
+  const [isReprocessing, setIsReprocessing] = useState(false);
 
   const { data: company, isLoading } = useQuery({
     queryKey: ['company', id],
     queryFn: () => api.companies.get(id),
   });
 
-  const { data: stages } = useQuery({
+  const { data: stages, refetch: refetchStages } = useQuery({
     queryKey: ['intake-stages', id],
     queryFn: () => api.intake.getAllStages(id),
+  });
+
+  const { data: research, refetch: refetchResearch } = useQuery({
+    queryKey: ['research', id],
+    queryFn: () => api.research.get(id).catch(() => null),
+  });
+
+  const { data: documents } = useQuery({
+    queryKey: ['documents', id],
+    queryFn: () => api.documents.list(id).catch(() => []),
   });
 
   const {
@@ -77,6 +96,70 @@ export default function CompanyOverviewPage({ params }: { params: Promise<{ id: 
     flags,
     isLoading: isLoadingAssessment,
   } = useAssessment(id);
+
+  // Determine AI processing state
+  const getAiState = useCallback((): AiProcessingState => {
+    const stage1 = stages?.find((s: any) => s.stage === '1');
+    const hasDocuments = documents && documents.length > 0;
+
+    // If research is actively in progress
+    if (research && research.status === 'in_progress') {
+      return 'researching';
+    }
+
+    // If stage 1 exists and is submitted/validated, data is ready
+    if (stage1 && (stage1.status === 'submitted' || stage1.status === 'validated')) {
+      return 'ready';
+    }
+
+    // If stage 1 is in_progress (auto-intake is filling data)
+    if (stage1 && stage1.status === 'in_progress') {
+      return 'analyzing';
+    }
+
+    // If we have documents but stage 1 is not_started, AI may be processing
+    if (hasDocuments && (!stage1 || stage1.status === 'not_started')) {
+      // Check if research was triggered (status exists)
+      if (research && research.status === 'pending') {
+        return 'researching';
+      }
+      // Might still be processing — check if company was just created with docs
+      if (research && research.status === 'completed' && (!stage1 || stage1.status === 'not_started')) {
+        return 'analyzing';
+      }
+    }
+
+    return 'none';
+  }, [stages, documents, research]);
+
+  const aiState = getAiState();
+
+  // Poll while AI is processing
+  useEffect(() => {
+    if (aiState !== 'researching' && aiState !== 'analyzing') return;
+
+    const interval = setInterval(() => {
+      refetchStages();
+      refetchResearch();
+      queryClient.invalidateQueries({ queryKey: ['company', id] });
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [aiState, id, refetchStages, refetchResearch, queryClient]);
+
+  const handleReprocess = async () => {
+    setIsReprocessing(true);
+    try {
+      await api.autoIntake.trigger(id);
+      toast.success('AI processing triggered — analyzing documents...');
+      refetchStages();
+      refetchResearch();
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to trigger AI processing');
+    } finally {
+      setIsReprocessing(false);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -124,10 +207,28 @@ export default function CompanyOverviewPage({ params }: { params: Promise<{ id: 
       {/* Company details */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Building2 className="h-5 w-5" />
-            Company Details
-          </CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <Building2 className="h-5 w-5" />
+              Company Details
+            </CardTitle>
+            {documents && documents.length > 0 && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="cursor-pointer gap-1.5"
+                onClick={handleReprocess}
+                disabled={isReprocessing || aiState === 'researching' || aiState === 'analyzing'}
+              >
+                {isReprocessing ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <RefreshCw className="h-3.5 w-3.5" />
+                )}
+                Re-process with AI
+              </Button>
+            )}
+          </div>
         </CardHeader>
         <CardContent>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

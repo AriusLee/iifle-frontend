@@ -95,9 +95,23 @@ export default function GeneStructurePage({ params }: { params: Promise<{ id: st
             </p>
           </div>
         </div>
-        {hasResults && (
-          <ScoreBadge score={geneModule.total_score} rating={geneModule.rating} size="lg" />
-        )}
+        <div className="flex items-center gap-3">
+          {hasResults && (
+            <ScoreBadge score={geneModule.total_score} rating={geneModule.rating} size="lg" />
+          )}
+          {isSubmitted && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="cursor-pointer gap-2"
+              onClick={() => triggerScoring('1')}
+              disabled={isTriggeringScoring}
+            >
+              {isTriggeringScoring ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
+              {isTriggeringScoring ? 'Scoring...' : hasResults ? 'Re-score' : 'Run Scoring'}
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* State: Not started */}
@@ -177,9 +191,20 @@ export default function GeneStructurePage({ params }: { params: Promise<{ id: st
             ) : (
               <>
                 <p className="text-sm text-muted-foreground">
-                  Stage 1 data has been submitted. Gene Structure scoring results will appear here
-                  once processing is complete.
+                  Stage 1 data submitted. Click below to run AI scoring for Gene Structure.
                 </p>
+                <Button
+                  className="cursor-pointer gap-2 mt-3"
+                  onClick={() => triggerScoring('1')}
+                  disabled={isTriggeringScoring}
+                >
+                  {isTriggeringScoring ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <RefreshCw className="h-4 w-4" />
+                  )}
+                  {isTriggeringScoring ? 'Scoring...' : 'Run AI Scoring'}
+                </Button>
                 <div className="mt-4 grid gap-2 sm:grid-cols-2">
                   {geneFactors.map((factor) => (
                     <div

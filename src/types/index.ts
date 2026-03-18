@@ -68,6 +68,7 @@ export interface Assessment {
   capital_readiness: 'red' | 'amber' | 'green' | null;
   created_at: string;
   module_scores?: ModuleScore[];
+  modules?: ModuleScore[];
 }
 
 export interface ModuleScore {

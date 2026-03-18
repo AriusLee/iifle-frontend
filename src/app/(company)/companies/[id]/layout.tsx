@@ -6,6 +6,7 @@ import { api } from '@/lib/api';
 import { CompanySidebar } from '@/components/layout/company-sidebar';
 import { Topbar } from '@/components/layout/topbar';
 import { ChatPanel } from '@/components/layout/chat-panel';
+import { AiStatusBar } from '@/components/layout/ai-status-bar';
 import { useCompanyStore } from '@/stores/company-store';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 
@@ -44,8 +45,9 @@ export default function CompanyLayout({
         <Topbar
           onMenuClick={() => setSidebarOpen(true)}
           companyId={id}
-          companyName={company?.legal_name}
+          companyName={company?.brand_name || company?.legal_name}
         />
+        <AiStatusBar companyId={id} />
         <div className="flex flex-1 overflow-hidden">
           <main className="flex-1 overflow-y-auto bg-muted/30 p-4 lg:p-6">
             {children}

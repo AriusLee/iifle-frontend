@@ -37,7 +37,7 @@ export function Scorecard({ moduleScore }: ScorecardProps) {
               .sort((a, b) => a.dimension_number - b.dimension_number)
               .map((dim) => (
                 <div
-                  key={dim.id}
+                  key={dim.id || dim.dimension_number}
                   className="grid grid-cols-[1fr_120px_60px_90px] gap-2 items-center text-sm"
                 >
                   <span className="font-medium truncate">{dim.dimension_name}</span>

@@ -74,6 +74,8 @@ export const api = {
         body: JSON.stringify(data),
       }),
     list: (companyId: string) => fetchApi<any[]>(`/companies/${companyId}/documents`),
+    delete: (companyId: string, docId: string) =>
+      fetchApi<void>(`/companies/${companyId}/documents/${docId}`, { method: 'DELETE' }),
     getDownloadUrl: (companyId: string, docId: string) =>
       fetchApi<{ download_url: string }>(
         `/companies/${companyId}/documents/${docId}/download-url`
@@ -93,18 +95,36 @@ export const api = {
       ),
     // sendMessage is handled directly with fetch+SSE in the chat panel, not via fetchApi
   },
+  research: {
+    get: (companyId: string) =>
+      fetchApi<any>(`/companies/${companyId}/research`),
+    trigger: (companyId: string) =>
+      fetchApi<any>(`/companies/${companyId}/research/trigger`, { method: 'POST' }),
+  },
   settings: {
     getKeyStatus: () =>
-      fetchApi<{ anthropic_configured: boolean; anthropic_key_hint: string | null }>('/settings/api-keys'),
-    updateApiKeys: (anthropicKey: string) =>
+      fetchApi<{
+        ai_provider: string;
+        anthropic_configured: boolean;
+        anthropic_key_hint: string | null;
+        groq_configured: boolean;
+        groq_key_hint: string | null;
+        gemini_configured: boolean;
+        gemini_key_hint: string | null;
+      }>('/settings/api-keys'),
+    updateApiKeys: (provider: string, apiKey: string) =>
       fetchApi<any>('/settings/api-keys', {
         method: 'PUT',
-        body: JSON.stringify({ anthropic_api_key: anthropicKey }),
+        body: JSON.stringify({ provider, api_key: apiKey }),
       }),
+  },
+  autoIntake: {
+    trigger: (companyId: string) =>
+      fetchApi<any>(`/companies/${companyId}/auto-intake/process`, { method: 'POST' }),
   },
   assessments: {
     trigger: (companyId: string, stage: string) =>
-      fetchApi<Assessment>(`/companies/${companyId}/assess`, { method: 'POST', body: JSON.stringify({ stage }) }),
+      fetchApi<Assessment>(`/companies/${companyId}/assessments`, { method: 'POST', body: JSON.stringify({ stage }) }),
     list: (companyId: string) =>
       fetchApi<Assessment[]>(`/companies/${companyId}/assessments`),
     get: (companyId: string, assessmentId: string) =>
