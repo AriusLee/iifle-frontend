@@ -39,14 +39,15 @@ export function DimensionTable({ dimensions }: DimensionTableProps) {
 
       {/* Rows */}
       {sorted.map((dim, index) => {
-        const isExpanded = expandedRows.has(dim.id);
+        const dimKey = dim.id || `dim-${dim.dimension_number}`;
+        const isExpanded = expandedRows.has(dimKey);
         const hasDetails = dim.ai_reasoning || Object.keys(dim.calculation_detail || {}).length > 0;
         const isEven = index % 2 === 0;
 
         return (
-          <div key={dim.id}>
+          <div key={dimKey}>
             <div
-              onClick={() => hasDetails && toggleRow(dim.id)}
+              onClick={() => hasDetails && toggleRow(dimKey)}
               className={`
                 grid grid-cols-[auto_1fr_80px_70px_100px] gap-3 px-4 py-3 items-center text-sm
                 ${hasDetails ? 'cursor-pointer hover:bg-muted/30' : ''}

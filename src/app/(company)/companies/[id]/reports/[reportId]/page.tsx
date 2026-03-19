@@ -15,6 +15,7 @@ import {
   Crown,
 } from 'lucide-react';
 import Link from 'next/link';
+import { getSession } from 'next-auth/react';
 import { api } from '@/lib/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -45,6 +46,29 @@ export default function ReportViewPage({
 }) {
   const { id, reportId } = use(params);
   const [showChinese, setShowChinese] = useState(false);
+
+  const handleExportPdf = async () => {
+    const lang = showChinese ? 'cn' : 'en';
+    const url = api.reports.exportPdfUrl(id, reportId, lang);
+    const session = (await getSession()) as any;
+    const token = session?.accessToken;
+
+    const res = await fetch(url, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+
+    if (!res.ok) return;
+
+    const blob = await res.blob();
+    const blobUrl = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = blobUrl;
+    a.download = res.headers.get('content-disposition')?.match(/filename="(.+)"/)?.[1] || 'report.pdf';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(blobUrl);
+  };
 
   const { data: report, isLoading } = useQuery({
     queryKey: ['report-detail', id, reportId],
@@ -168,7 +192,12 @@ export default function ReportViewPage({
               </button>
             </div>
           )}
-          <Button variant="outline" size="sm" className="cursor-pointer gap-2" disabled>
+          <Button
+            variant="outline"
+            size="sm"
+            className="cursor-pointer gap-2"
+            onClick={() => handleExportPdf()}
+          >
             <Download className="h-3.5 w-3.5" />
             Export PDF
           </Button>

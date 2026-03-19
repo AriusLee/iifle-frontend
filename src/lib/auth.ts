@@ -50,7 +50,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         return true;
       }
 
-      return isLoggedIn;
+      // Allow access — let client-side handle auth redirect
+      return true;
     },
     async jwt({ token, user }) {
       if (user) {

@@ -3,6 +3,8 @@ import { getSession } from 'next-auth/react';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:2030/api/v1';
 
+let isRedirecting = false;
+
 async function fetchApi<T>(path: string, options: RequestInit = {}): Promise<T> {
   const session = await getSession() as any;
   const token = session?.accessToken;
@@ -15,7 +17,11 @@ async function fetchApi<T>(path: string, options: RequestInit = {}): Promise<T> 
 
   const res = await fetch(`${API_URL}${path}`, { ...options, headers });
   if (res.status === 401) {
-    if (typeof window !== 'undefined') {
+    if (typeof window !== 'undefined' && !isRedirecting && !window.location.pathname.startsWith('/login')) {
+      isRedirecting = true;
+      // Clear stale session and redirect to login
+      const { signOut } = await import('next-auth/react');
+      await signOut({ redirect: false }).catch(() => {});
       window.location.href = '/login';
     }
     throw new Error('Unauthorized');
@@ -132,6 +138,8 @@ export const api = {
         method: 'POST',
         body: JSON.stringify(data),
       }),
+    exportPdfUrl: (companyId: string, reportId: string, language: string = 'en') =>
+      `${API_URL}/companies/${companyId}/reports/${reportId}/export/pdf?language=${language}`,
   },
   assessments: {
     trigger: (companyId: string, stage: string) =>

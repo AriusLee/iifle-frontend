@@ -32,11 +32,14 @@ export function useAssessment(companyId: string) {
     queryKey: ['assessment', companyId, latestAssessment?.id],
     queryFn: () => api.assessments.get(companyId, latestAssessment!.id),
     enabled: !!latestAssessment?.id,
+    retry: false,
     refetchInterval: (query) => {
       const data = query.state.data as any;
+      if (!data) return false;
       const modules = data?.modules ?? data?.module_scores ?? [];
-      // Keep polling if assessment exists but no modules yet
-      return latestAssessment && modules.length === 0 ? 5000 : false;
+      const status = data?.status;
+      // Only poll while actively scoring
+      return (status === 'scoring' || status === 'pending') && modules.length === 0 ? 5000 : false;
     },
   });
 

@@ -18,38 +18,36 @@ export function AiStatusBar({ companyId }: AiStatusBarProps) {
   const { data: research } = useQuery({
     queryKey: ['research', companyId],
     queryFn: () => api.research.get(companyId).catch(() => null),
+    retry: false,
     refetchInterval: (query) => {
       const data = query.state.data as any;
-      if (!data) return 10000;
-      return data.status === 'in_progress' || data.status === 'pending' ? 3000 : false;
+      if (!data) return false;
+      return data.status === 'in_progress' || data.status === 'pending' ? 5000 : false;
     },
   });
 
   const { data: stages } = useQuery({
     queryKey: ['intake-stages', companyId],
     queryFn: () => api.intake.getAllStages(companyId).catch(() => []),
-    refetchInterval: (query) => {
-      const data = query.state.data as any[];
-      if (!data) return 10000;
-      const stage1 = data.find((s: any) => s.stage === '1');
-      if (!stage1 || stage1.status === 'in_progress') return 3000;
-      return false;
-    },
+    retry: false,
+    refetchInterval: false,
   });
 
   const { data: documents } = useQuery({
     queryKey: ['documents', companyId],
     queryFn: () => api.documents.list(companyId).catch(() => []),
+    retry: false,
     refetchInterval: false,
   });
 
   const { data: assessments } = useQuery({
     queryKey: ['assessments', companyId],
     queryFn: () => api.assessments.list(companyId).catch(() => []),
+    retry: false,
     refetchInterval: (query) => {
       const data = query.state.data as any[];
       const latest = data?.[0];
-      return latest?.status === 'scoring' || latest?.status === 'pending' ? 3000 : false;
+      return latest?.status === 'scoring' || latest?.status === 'pending' ? 5000 : false;
     },
   });
 

@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { Menu, LogOut, User, MessageSquare, FileText } from 'lucide-react';
 import { signOut, useSession } from 'next-auth/react';
 import { Button } from '@/components/ui/button';
@@ -22,8 +23,13 @@ interface TopbarProps {
 }
 
 export function Topbar({ onMenuClick, companyId, companyName }: TopbarProps) {
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const { rightPanel, toggleChat, toggleReports } = useCompanyStore();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const initials = session?.user?.name
     ? session.user.name
@@ -85,41 +91,43 @@ export function Topbar({ onMenuClick, companyId, companyName }: TopbarProps) {
           </Button>
         )}
 
-        {/* User menu */}
-        <DropdownMenu>
-          <DropdownMenuTrigger className="relative flex h-8 w-8 items-center justify-center rounded-full cursor-pointer hover:bg-muted transition-colors">
-            <Avatar className="h-8 w-8">
-              <AvatarFallback className="bg-primary text-primary-foreground text-xs">
-                {initials}
-              </AvatarFallback>
-            </Avatar>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-56">
-            <DropdownMenuLabel>
-              <div className="flex flex-col space-y-1">
-                <p className="text-sm font-medium">
-                  {session?.user?.name || 'User'}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  {session?.user?.email}
-                </p>
-              </div>
-            </DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem className="cursor-pointer" disabled>
-              <User className="mr-2 h-4 w-4" />
-              Profile
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem
-              className="cursor-pointer text-destructive focus:text-destructive"
-              onClick={() => signOut({ callbackUrl: '/login' })}
-            >
-              <LogOut className="mr-2 h-4 w-4" />
-              Sign Out
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        {/* User menu — only render on client to avoid hydration mismatch */}
+        {mounted && (
+          <DropdownMenu>
+            <DropdownMenuTrigger className="relative flex h-8 w-8 items-center justify-center rounded-full cursor-pointer hover:bg-muted transition-colors">
+              <Avatar className="h-8 w-8">
+                <AvatarFallback className="bg-primary text-primary-foreground text-xs">
+                  {initials}
+                </AvatarFallback>
+              </Avatar>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuLabel>
+                <div className="flex flex-col space-y-1">
+                  <p className="text-sm font-medium">
+                    {session?.user?.name || 'User'}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {session?.user?.email}
+                  </p>
+                </div>
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem className="cursor-pointer" disabled>
+                <User className="mr-2 h-4 w-4" />
+                Profile
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                className="cursor-pointer text-destructive focus:text-destructive"
+                onClick={() => signOut({ callbackUrl: '/login' })}
+              >
+                <LogOut className="mr-2 h-4 w-4" />
+                Sign Out
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
       </div>
     </header>
   );

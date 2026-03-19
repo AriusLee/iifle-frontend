@@ -88,10 +88,11 @@ export function ReportPanel({ companyId }: ReportPanelProps) {
   const { data: reports, isLoading } = useQuery({
     queryKey: ['reports', companyId],
     queryFn: () => api.reports.list(companyId),
+    retry: false,
     refetchInterval: (query) => {
       const data = query.state.data;
       if (data?.some((r) => r.status === 'generating')) return 3000;
-      return 15000;
+      return false;
     },
   });
 
