@@ -1,4 +1,4 @@
-import type { Company, Assessment, AutoFlag } from '@/types';
+import type { Company, Assessment, AutoFlag, ReportSummary, ReportDetail } from '@/types';
 import { getSession } from 'next-auth/react';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:2030/api/v1';
@@ -121,6 +121,17 @@ export const api = {
   autoIntake: {
     trigger: (companyId: string) =>
       fetchApi<any>(`/companies/${companyId}/auto-intake/process`, { method: 'POST' }),
+  },
+  reports: {
+    list: (companyId: string) =>
+      fetchApi<ReportSummary[]>(`/companies/${companyId}/reports`),
+    get: (companyId: string, reportId: string) =>
+      fetchApi<ReportDetail>(`/companies/${companyId}/reports/${reportId}`),
+    generate: (companyId: string, data: { module_number: number; assessment_id: string; tier?: string }) =>
+      fetchApi<{ status: string; module_number: number }>(`/companies/${companyId}/reports/generate`, {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
   },
   assessments: {
     trigger: (companyId: string, stage: string) =>

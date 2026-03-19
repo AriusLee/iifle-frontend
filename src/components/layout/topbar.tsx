@@ -1,6 +1,6 @@
 'use client';
 
-import { Menu, LogOut, User, MessageSquare } from 'lucide-react';
+import { Menu, LogOut, User, MessageSquare, FileText } from 'lucide-react';
 import { signOut, useSession } from 'next-auth/react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -23,7 +23,7 @@ interface TopbarProps {
 
 export function Topbar({ onMenuClick, companyId, companyName }: TopbarProps) {
   const { data: session } = useSession();
-  const { chatOpen, toggleChat } = useCompanyStore();
+  const { rightPanel, toggleChat, toggleReports } = useCompanyStore();
 
   const initials = session?.user?.name
     ? session.user.name
@@ -59,10 +59,23 @@ export function Topbar({ onMenuClick, companyId, companyName }: TopbarProps) {
 
       {/* Right side */}
       <div className="flex items-center gap-2">
+        {/* Report toggle (only in company context) */}
+        {companyId && (
+          <Button
+            variant={rightPanel === 'reports' ? 'secondary' : 'ghost'}
+            size="icon"
+            className="cursor-pointer"
+            onClick={toggleReports}
+          >
+            <FileText className="h-5 w-5" />
+            <span className="sr-only">Toggle reports</span>
+          </Button>
+        )}
+
         {/* Chat toggle (only in company context) */}
         {companyId && (
           <Button
-            variant={chatOpen ? 'secondary' : 'ghost'}
+            variant={rightPanel === 'chat' ? 'secondary' : 'ghost'}
             size="icon"
             className="cursor-pointer"
             onClick={toggleChat}

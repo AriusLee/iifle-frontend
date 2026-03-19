@@ -61,7 +61,7 @@ export interface Assessment {
   id: string;
   company_id: string;
   trigger_stage: string;
-  status: 'pending' | 'scoring' | 'draft' | 'review' | 'approved' | 'archived';
+  status: 'pending' | 'scoring' | 'draft' | 'review' | 'approved' | 'archived' | 'failed';
   overall_score: number | null;
   overall_rating: string | null;
   enterprise_stage_classification: string | null;
@@ -100,4 +100,37 @@ export interface AutoFlag {
   source_field: string | null;
   source_value: string | null;
   is_resolved: boolean;
+}
+
+// Report types
+export interface ReportSummary {
+  id: string;
+  assessment_id: string;
+  company_id: string;
+  report_type: string;
+  title: string;
+  status: 'generating' | 'draft' | 'review' | 'revision' | 'approved' | 'published';
+  language: string;
+  version: number;
+  approved_by: string | null;
+  approved_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ReportSection {
+  id: string;
+  section_key: string;
+  section_title: string;
+  content_en: string | null;
+  content_cn: string | null;
+  content_data: Record<string, any> | null;
+  sort_order: number;
+  is_ai_generated: boolean;
+  last_edited_by: string | null;
+  last_edited_at: string | null;
+}
+
+export interface ReportDetail extends ReportSummary {
+  sections: ReportSection[];
 }

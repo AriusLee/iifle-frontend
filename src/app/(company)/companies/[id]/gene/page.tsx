@@ -2,7 +2,7 @@
 
 import { use } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Dna, ArrowRight, Loader2, Clock, CheckCircle2, RefreshCw } from 'lucide-react';
+import { Dna, ArrowRight, Loader2, Clock, CheckCircle2, RefreshCw, FileText, List } from 'lucide-react';
 import Link from 'next/link';
 import { api } from '@/lib/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,7 +12,9 @@ import { RadarChart } from '@/components/reports/radar-chart';
 import { Scorecard } from '@/components/reports/scorecard';
 import { DimensionTable } from '@/components/reports/dimension-table';
 import { AutoFlags } from '@/components/reports/auto-flags';
+import { GenerateReportDialog } from '@/components/reports/generate-report-dialog';
 import { useAssessment } from '@/hooks/use-assessment';
+import { useCompanyStore } from '@/stores/company-store';
 import type { IntakeStatus } from '@/types';
 
 const geneFactors = [
@@ -27,6 +29,8 @@ const geneFactors = [
 
 export default function GeneStructurePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
+  const { openReports, rightPanel } = useCompanyStore();
+  const openGeneReports = () => openReports('module_1');
 
   const { data: stages, isLoading } = useQuery({
     queryKey: ['intake-stages', id],
@@ -58,7 +62,6 @@ export default function GeneStructurePage({ params }: { params: Promise<{ id: st
   const geneModule = getModuleScore(1);
   const hasResults = isSubmitted && geneModule && geneModule.dimensions && geneModule.dimensions.length > 0;
 
-  // Filter flags relevant to gene/module 1
   const geneFlags = flags.filter(
     (f) =>
       f.flag_type.toLowerCase().includes('gene') ||
@@ -95,9 +98,31 @@ export default function GeneStructurePage({ params }: { params: Promise<{ id: st
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           {hasResults && (
-            <ScoreBadge score={geneModule.total_score} rating={geneModule.rating} size="lg" />
+            <>
+              <ScoreBadge score={geneModule.total_score} rating={geneModule.rating} size="lg" />
+              <GenerateReportDialog
+                companyId={id}
+                assessmentId={assessment!.id}
+                moduleNumber={1}
+                moduleName="Gene Structure"
+              >
+                <Button variant="outline" size="sm" className="cursor-pointer gap-2">
+                  <FileText className="h-3.5 w-3.5" />
+                  Generate Report
+                </Button>
+              </GenerateReportDialog>
+              <Button
+                variant={rightPanel === 'reports' ? 'secondary' : 'outline'}
+                size="sm"
+                className="cursor-pointer gap-2"
+                onClick={openGeneReports}
+              >
+                <List className="h-3.5 w-3.5" />
+                Reports
+              </Button>
+            </>
           )}
           {isSubmitted && (
             <Button
@@ -254,8 +279,29 @@ export default function GeneStructurePage({ params }: { params: Promise<{ id: st
           {/* Auto Flags */}
           {geneFlags.length > 0 && <AutoFlags flags={geneFlags} />}
 
-          {/* Re-score button */}
-          <div className="flex justify-end">
+          {/* Bottom actions */}
+          <div className="flex justify-between">
+            <div className="flex gap-2">
+              <GenerateReportDialog
+                companyId={id}
+                assessmentId={assessment!.id}
+                moduleNumber={1}
+                moduleName="Gene Structure"
+              >
+                <Button variant="outline" className="cursor-pointer gap-2">
+                  <FileText className="h-4 w-4" />
+                  Generate Report
+                </Button>
+              </GenerateReportDialog>
+              <Button
+                variant={rightPanel === 'reports' ? 'secondary' : 'outline'}
+                className="cursor-pointer gap-2"
+                onClick={openGeneReports}
+              >
+                <List className="h-4 w-4" />
+                View Reports
+              </Button>
+            </div>
             <Button
               onClick={() => triggerScoring('1')}
               disabled={isTriggeringScoring}

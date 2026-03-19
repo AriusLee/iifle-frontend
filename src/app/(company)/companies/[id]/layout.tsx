@@ -6,6 +6,7 @@ import { api } from '@/lib/api';
 import { CompanySidebar } from '@/components/layout/company-sidebar';
 import { Topbar } from '@/components/layout/topbar';
 import { ChatPanel } from '@/components/layout/chat-panel';
+import { ReportPanel } from '@/components/layout/report-panel';
 import { AiStatusBar } from '@/components/layout/ai-status-bar';
 import { useCompanyStore } from '@/stores/company-store';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
@@ -19,7 +20,7 @@ export default function CompanyLayout({
 }) {
   const { id } = use(params);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const chatOpen = useCompanyStore((s) => s.chatOpen);
+  const rightPanel = useCompanyStore((s) => s.rightPanel);
 
   const { data: company } = useQuery({
     queryKey: ['company', id],
@@ -40,22 +41,27 @@ export default function CompanyLayout({
         </SheetContent>
       </Sheet>
 
-      {/* Main content + chat */}
+      {/* Main content + right panel */}
       <div className="flex flex-1 flex-col overflow-hidden">
         <Topbar
           onMenuClick={() => setSidebarOpen(true)}
           companyId={id}
-          companyName={company?.brand_name || company?.legal_name}
+          companyName={company?.legal_name}
         />
         <AiStatusBar companyId={id} />
         <div className="flex flex-1 overflow-hidden">
           <main className="flex-1 overflow-y-auto bg-muted/30 p-4 lg:p-6">
             {children}
           </main>
-          {/* Chat panel (desktop only, collapsible) */}
-          {chatOpen && (
+          {/* Right panel (desktop only, collapsible) */}
+          {rightPanel === 'chat' && (
             <div className="hidden md:flex">
               <ChatPanel companyId={id} />
+            </div>
+          )}
+          {rightPanel === 'reports' && (
+            <div className="hidden md:flex">
+              <ReportPanel companyId={id} />
             </div>
           )}
         </div>

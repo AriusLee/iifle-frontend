@@ -43,10 +43,10 @@ export default function CompanySettingsPage({ params }: { params: Promise<{ id: 
                 <Label className="text-xs text-muted-foreground">Legal Name</Label>
                 <p className="text-sm font-medium">{company.legal_name}</p>
               </div>
-              {company.brand_name && (
+              {(company as any).brand_name && (
                 <div>
                   <Label className="text-xs text-muted-foreground">Brand Name</Label>
-                  <p className="text-sm font-medium">{company.brand_name}</p>
+                  <p className="text-sm font-medium">{(company as any).brand_name}</p>
                 </div>
               )}
               {company.registration_number && (

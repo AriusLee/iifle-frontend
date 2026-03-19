@@ -2,7 +2,7 @@
 
 import { use } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Blocks, ArrowRight, Loader2, Clock, CheckCircle2, RefreshCw } from 'lucide-react';
+import { Blocks, ArrowRight, Loader2, Clock, CheckCircle2, RefreshCw, FileText, List } from 'lucide-react';
 import Link from 'next/link';
 import { api } from '@/lib/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,7 +12,9 @@ import { RadarChart } from '@/components/reports/radar-chart';
 import { Scorecard } from '@/components/reports/scorecard';
 import { DimensionTable } from '@/components/reports/dimension-table';
 import { AutoFlags } from '@/components/reports/auto-flags';
+import { GenerateReportDialog } from '@/components/reports/generate-report-dialog';
 import { useAssessment } from '@/hooks/use-assessment';
+import { useCompanyStore } from '@/stores/company-store';
 import type { IntakeStatus } from '@/types';
 
 const modelDimensions = [
@@ -28,6 +30,8 @@ const modelDimensions = [
 
 export default function BusinessModelPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
+  const { openReports, rightPanel } = useCompanyStore();
+  const openBmReports = () => openReports('module_2');
 
   const { data: stages, isLoading } = useQuery({
     queryKey: ['intake-stages', id],
@@ -59,7 +63,6 @@ export default function BusinessModelPage({ params }: { params: Promise<{ id: st
   const bmModule = getModuleScore(2);
   const hasResults = isSubmitted && bmModule && bmModule.dimensions && bmModule.dimensions.length > 0;
 
-  // Filter flags relevant to business model / module 2
   const bmFlags = flags.filter(
     (f) =>
       f.flag_type.toLowerCase().includes('business') ||
@@ -95,9 +98,45 @@ export default function BusinessModelPage({ params }: { params: Promise<{ id: st
             </p>
           </div>
         </div>
-        {hasResults && (
-          <ScoreBadge score={bmModule.total_score} rating={bmModule.rating} size="lg" />
-        )}
+        <div className="flex items-center gap-2">
+          {hasResults && (
+            <>
+              <ScoreBadge score={bmModule.total_score} rating={bmModule.rating} size="lg" />
+              <GenerateReportDialog
+                companyId={id}
+                assessmentId={assessment!.id}
+                moduleNumber={2}
+                moduleName="Business Model"
+              >
+                <Button variant="outline" size="sm" className="cursor-pointer gap-2">
+                  <FileText className="h-3.5 w-3.5" />
+                  Generate Report
+                </Button>
+              </GenerateReportDialog>
+              <Button
+                variant={rightPanel === 'reports' ? 'secondary' : 'outline'}
+                size="sm"
+                className="cursor-pointer gap-2"
+                onClick={openBmReports}
+              >
+                <List className="h-3.5 w-3.5" />
+                Reports
+              </Button>
+            </>
+          )}
+          {isSubmitted && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="cursor-pointer gap-2"
+              onClick={() => triggerScoring('1')}
+              disabled={isTriggeringScoring}
+            >
+              {isTriggeringScoring ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
+              {isTriggeringScoring ? 'Scoring...' : hasResults ? 'Re-score' : 'Run Scoring'}
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* State: Not started */}
@@ -176,6 +215,18 @@ export default function BusinessModelPage({ params }: { params: Promise<{ id: st
                   Stage 1 data has been submitted. Business Model scoring results will appear here
                   once processing is complete.
                 </p>
+                <Button
+                  className="cursor-pointer gap-2 mt-3"
+                  onClick={() => triggerScoring('1')}
+                  disabled={isTriggeringScoring}
+                >
+                  {isTriggeringScoring ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <RefreshCw className="h-4 w-4" />
+                  )}
+                  {isTriggeringScoring ? 'Scoring...' : 'Run AI Scoring'}
+                </Button>
                 <div className="mt-4 grid gap-2 sm:grid-cols-2">
                   {modelDimensions.map((dim) => (
                     <div key={dim} className="flex items-center justify-between rounded-lg border px-3 py-2 text-sm">
@@ -222,8 +273,29 @@ export default function BusinessModelPage({ params }: { params: Promise<{ id: st
           {/* Auto Flags */}
           {bmFlags.length > 0 && <AutoFlags flags={bmFlags} />}
 
-          {/* Re-score button */}
-          <div className="flex justify-end">
+          {/* Bottom actions */}
+          <div className="flex justify-between">
+            <div className="flex gap-2">
+              <GenerateReportDialog
+                companyId={id}
+                assessmentId={assessment!.id}
+                moduleNumber={2}
+                moduleName="Business Model"
+              >
+                <Button variant="outline" className="cursor-pointer gap-2">
+                  <FileText className="h-4 w-4" />
+                  Generate Report
+                </Button>
+              </GenerateReportDialog>
+              <Button
+                variant={rightPanel === 'reports' ? 'secondary' : 'outline'}
+                className="cursor-pointer gap-2"
+                onClick={openBmReports}
+              >
+                <List className="h-4 w-4" />
+                View Reports
+              </Button>
+            </div>
             <Button
               onClick={() => triggerScoring('1')}
               disabled={isTriggeringScoring}

@@ -84,10 +84,10 @@ export function AiStatusBar({ companyId }: AiStatusBarProps) {
 
   // 3. Scoring status
   if (latestAssessment?.status === 'scoring' || latestAssessment?.status === 'pending') {
-    const progressMsg = latestAssessment?.progress_message || 'AI scoring in progress';
+    const progressMsg = (latestAssessment as any)?.progress_message || 'AI scoring in progress';
     tasks.push({ label: progressMsg, icon: <TrendingUp className="h-3.5 w-3.5" />, color: 'text-blue-600' });
   } else if (latestAssessment?.status === 'failed') {
-    const errMsg = latestAssessment.error_message?.slice(0, 60) || 'Unknown error';
+    const errMsg = (latestAssessment as any).error_message?.slice(0, 60) || 'Unknown error';
     tasks.push({ label: `Scoring failed: ${errMsg}`, icon: <AlertCircle className="h-3.5 w-3.5" />, color: 'text-red-500' });
   } else if (latestAssessment?.status === 'draft' || latestAssessment?.status === 'approved') {
     tasks.push({ label: 'Scoring complete', icon: <CheckCircle2 className="h-3.5 w-3.5" />, color: 'text-emerald-600' });

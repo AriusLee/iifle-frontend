@@ -1,0 +1,230 @@
+'use client';
+
+import { use, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import {
+  ArrowLeft,
+  FileText,
+  Loader2,
+  CheckCircle2,
+  Clock,
+  Download,
+  Languages,
+  Zap,
+  Star,
+  Crown,
+} from 'lucide-react';
+import Link from 'next/link';
+import { api } from '@/lib/api';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
+import { cn } from '@/lib/utils';
+import type { ReportDetail } from '@/types';
+
+const STATUS_MAP: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' }> = {
+  generating: { label: 'Generating', variant: 'secondary' },
+  draft: { label: 'Draft', variant: 'outline' },
+  review: { label: 'In Review', variant: 'secondary' },
+  revision: { label: 'Revision', variant: 'destructive' },
+  approved: { label: 'Approved', variant: 'default' },
+  published: { label: 'Published', variant: 'default' },
+};
+
+const TIER_CONFIG: Record<string, { icon: typeof Star; label: string; color: string }> = {
+  essential: { icon: Zap, label: 'Essential', color: 'text-slate-500' },
+  standard: { icon: Star, label: 'Standard', color: 'text-blue-500' },
+  premium: { icon: Crown, label: 'Premium', color: 'text-amber-500' },
+};
+
+export default function ReportViewPage({
+  params,
+}: {
+  params: Promise<{ id: string; reportId: string }>;
+}) {
+  const { id, reportId } = use(params);
+  const [showChinese, setShowChinese] = useState(false);
+
+  const { data: report, isLoading } = useQuery({
+    queryKey: ['report-detail', id, reportId],
+    queryFn: () => api.reports.get(id, reportId),
+    refetchInterval: (query) => {
+      if (query.state.data?.status === 'generating') return 3000;
+      return false;
+    },
+  });
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (!report) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-center">
+        <FileText className="h-12 w-12 text-muted-foreground mb-4" />
+        <p className="text-lg font-medium">Report not found</p>
+        <Link href={`/companies/${id}`}>
+          <Button variant="outline" className="cursor-pointer mt-4 gap-2">
+            <ArrowLeft className="h-4 w-4" />
+            Back to company
+          </Button>
+        </Link>
+      </div>
+    );
+  }
+
+  const statusCfg = STATUS_MAP[report.status] || STATUS_MAP.draft;
+  const tier = (report as any).tier || 'standard';
+  const tierCfg = TIER_CONFIG[tier] || TIER_CONFIG.standard;
+  const TierIcon = tierCfg.icon;
+  const hasChinese = report.sections?.some((s) => s.content_cn);
+
+  if (report.status === 'generating') {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center gap-3">
+          <Link href={`/companies/${id}`}>
+            <Button variant="ghost" size="icon" className="cursor-pointer">
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+          </Link>
+          <h1 className="text-2xl font-bold tracking-tight">{report.title}</h1>
+        </div>
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-16">
+            <Loader2 className="h-10 w-10 animate-spin text-primary mb-4" />
+            <p className="text-lg font-medium">Generating Report...</p>
+            <p className="text-sm text-muted-foreground mt-1">
+              AI is analyzing your data and writing the report. This typically takes 1-3 minutes.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6 max-w-4xl mx-auto">
+      {/* Header */}
+      <div className="flex items-start justify-between">
+        <div className="flex items-start gap-3">
+          <Link href={`/companies/${id}`}>
+            <Button variant="ghost" size="icon" className="cursor-pointer mt-1">
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+          </Link>
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">{report.title}</h1>
+            <div className="flex items-center gap-3 mt-1.5">
+              <Badge variant={statusCfg.variant}>{statusCfg.label}</Badge>
+              <span className={cn('flex items-center gap-1 text-xs font-medium', tierCfg.color)}>
+                <TierIcon className="h-3.5 w-3.5" />
+                {tierCfg.label}
+              </span>
+              <span className="text-xs text-muted-foreground">
+                Version {report.version}
+              </span>
+              <span className="text-xs text-muted-foreground">
+                {new Date(report.created_at).toLocaleDateString('en-MY', {
+                  day: 'numeric',
+                  month: 'long',
+                  year: 'numeric',
+                })}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2">
+          {/* Language toggle */}
+          {hasChinese && (
+            <div className="flex items-center rounded-lg border p-0.5">
+              <button
+                onClick={() => setShowChinese(false)}
+                className={cn(
+                  'px-2.5 py-1 text-xs rounded-md cursor-pointer transition-colors',
+                  !showChinese
+                    ? 'bg-primary text-primary-foreground'
+                    : 'text-muted-foreground hover:text-foreground'
+                )}
+              >
+                EN
+              </button>
+              <button
+                onClick={() => setShowChinese(true)}
+                className={cn(
+                  'px-2.5 py-1 text-xs rounded-md cursor-pointer transition-colors',
+                  showChinese
+                    ? 'bg-primary text-primary-foreground'
+                    : 'text-muted-foreground hover:text-foreground'
+                )}
+              >
+                中文
+              </button>
+            </div>
+          )}
+          <Button variant="outline" size="sm" className="cursor-pointer gap-2" disabled>
+            <Download className="h-3.5 w-3.5" />
+            Export PDF
+          </Button>
+        </div>
+      </div>
+
+      {/* Report sections */}
+      <div className="space-y-6">
+        {report.sections
+          ?.sort((a, b) => a.sort_order - b.sort_order)
+          .map((section) => {
+            const content = showChinese
+              ? section.content_cn || section.content_en
+              : section.content_en;
+
+            return (
+              <Card key={section.id}>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    {section.section_title}
+                    {section.is_ai_generated && (
+                      <Badge variant="secondary" className="text-[10px] font-normal">
+                        AI Generated
+                      </Badge>
+                    )}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {content ? (
+                    <div className="prose prose-sm max-w-none text-foreground/90 whitespace-pre-wrap leading-relaxed">
+                      {content}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground italic">
+                      No content available for this section.
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
+            );
+          })}
+      </div>
+
+      {/* Footer */}
+      <Separator />
+      <div className="flex items-center justify-between pb-8">
+        <p className="text-xs text-muted-foreground">
+          Report generated by IIFLE AI Platform. This report is confidential and intended for authorized personnel only.
+        </p>
+        <Link href={`/companies/${id}`}>
+          <Button variant="outline" size="sm" className="cursor-pointer gap-2">
+            <ArrowLeft className="h-3.5 w-3.5" />
+            Back to Company
+          </Button>
+        </Link>
+      </div>
+    </div>
+  );
+}
