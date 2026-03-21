@@ -111,12 +111,8 @@ export const api = {
     getKeyStatus: () =>
       fetchApi<{
         ai_provider: string;
-        anthropic_configured: boolean;
-        anthropic_key_hint: string | null;
         groq_configured: boolean;
         groq_key_hint: string | null;
-        gemini_configured: boolean;
-        gemini_key_hint: string | null;
       }>('/settings/api-keys'),
     updateApiKeys: (provider: string, apiKey: string) =>
       fetchApi<any>('/settings/api-keys', {

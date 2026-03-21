@@ -59,7 +59,7 @@ export function Scorecard({ moduleScore }: ScorecardProps) {
                     {Math.round(dim.weight * 100)}%
                   </span>
                   <span className="text-xs text-muted-foreground text-right capitalize truncate">
-                    {dim.scoring_method.replace(/_/g, ' ')}
+                    {(dim.scoring_method || 'ai').replace(/_/g, ' ')}
                   </span>
                 </div>
               ))}
