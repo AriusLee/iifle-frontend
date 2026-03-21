@@ -123,10 +123,6 @@ export default function CompanyOverviewPage({ params }: { params: Promise<{ id: 
       if (research && research.status === 'pending') {
         return 'researching';
       }
-      // Might still be processing — check if company was just created with docs
-      if (research && research.status === 'completed' && (!stage1 || stage1.status === 'not_started')) {
-        return 'analyzing';
-      }
     }
 
     return 'none';
