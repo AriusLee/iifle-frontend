@@ -137,6 +137,20 @@ export const api = {
     exportPdfUrl: (companyId: string, reportId: string, language: string = 'en') =>
       `${API_URL}/companies/${companyId}/reports/${reportId}/export/pdf?language=${language}`,
   },
+  diagnostics: {
+    create: (data: { company: { legal_name: string; primary_industry?: string; country?: string; contact_person?: string; contact_phone?: string }; answers?: Record<string, string | string[]>; other_answers?: Record<string, string> }) =>
+      fetchApi<any>('/diagnostics', { method: 'POST', body: JSON.stringify(data) }),
+    list: () => fetchApi<any[]>('/diagnostics'),
+    get: (id: string) => fetchApi<any>(`/diagnostics/${id}`),
+    saveDraft: (id: string, data: { answers: Record<string, string | string[]>; other_answers?: Record<string, string> }) =>
+      fetchApi<any>(`/diagnostics/${id}/draft`, { method: 'PUT', body: JSON.stringify(data) }),
+    submit: (id: string) =>
+      fetchApi<any>(`/diagnostics/${id}/submit`, { method: 'POST' }),
+    generateReport: (id: string) =>
+      fetchApi<any>(`/diagnostics/${id}/generate-report`, { method: 'POST' }),
+    getReport: (id: string) =>
+      fetchApi<any>(`/diagnostics/${id}/report`),
+  },
   assessments: {
     trigger: (companyId: string, stage: string) =>
       fetchApi<Assessment>(`/companies/${companyId}/assessments`, { method: 'POST', body: JSON.stringify({ stage }) }),

@@ -8,8 +8,8 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 
 const navItems = [
-  { label: 'Dashboard', href: '/companies', icon: LayoutDashboard },
-  { label: 'Settings', href: '/settings', icon: Settings },
+  { label: 'Dashboard', href: '/companies', icon: LayoutDashboard, matchPrefixes: ['/companies', '/diagnostics'] },
+  { label: 'Settings', href: '/settings', icon: Settings, matchPrefixes: ['/settings'] },
 ];
 
 export function GlobalSidebar({ className }: { className?: string }) {
@@ -36,7 +36,9 @@ export function GlobalSidebar({ className }: { className?: string }) {
       {/* Navigation */}
       <nav className="flex-1 space-y-1 px-3 py-4">
         {navItems.map((item) => {
-          const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
+          const isActive = item.matchPrefixes
+            ? item.matchPrefixes.some((p) => pathname === p || pathname.startsWith(p + '/'))
+            : pathname === item.href || pathname.startsWith(item.href + '/');
 
           return (
             <Link
