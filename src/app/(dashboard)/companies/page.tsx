@@ -247,7 +247,7 @@ export default function CompaniesPage() {
                     <TableRow
                       key={d.id}
                       className="cursor-pointer"
-                      onClick={() => router.push(`/diagnostics/${d.id}`)}
+                      onClick={() => router.push(`/companies/${d.company_id}`)}
                     >
                       <TableCell className="font-medium">
                         {d.company_name || '未命名企业'}

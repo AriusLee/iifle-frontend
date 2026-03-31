@@ -31,13 +31,13 @@ export default function CompanyLayout({
     <div className="flex h-screen overflow-hidden">
       {/* Desktop company sidebar */}
       <div className="hidden lg:block">
-        <CompanySidebar companyId={id} className="h-screen" />
+        <CompanySidebar companyId={id} companyName={company?.legal_name} className="h-screen" />
       </div>
 
       {/* Mobile company sidebar */}
       <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
         <SheetContent side="left" className="w-64 p-0">
-          <CompanySidebar companyId={id} />
+          <CompanySidebar companyId={id} companyName={company?.legal_name} />
         </SheetContent>
       </Sheet>
 

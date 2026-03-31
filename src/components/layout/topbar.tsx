@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Menu, LogOut, User, MessageSquare, FileText } from 'lucide-react';
+import { Menu, LogOut, User, MessageSquare, FileText, Globe } from 'lucide-react';
 import { signOut, useSession } from 'next-auth/react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { CompanySelector } from '@/components/layout/company-selector';
 import { useCompanyStore } from '@/stores/company-store';
+import { useI18n } from '@/lib/i18n';
 
 interface TopbarProps {
   onMenuClick: () => void;
@@ -91,6 +92,9 @@ export function Topbar({ onMenuClick, companyId, companyName }: TopbarProps) {
           </Button>
         )}
 
+        {/* Language toggle */}
+        <LangToggle />
+
         {/* User menu — only render on client to avoid hydration mismatch */}
         {mounted && (
           <DropdownMenu>
@@ -130,5 +134,19 @@ export function Topbar({ onMenuClick, companyId, companyName }: TopbarProps) {
         )}
       </div>
     </header>
+  );
+}
+
+function LangToggle() {
+  const { locale, setLocale } = useI18n();
+  return (
+    <button
+      onClick={() => setLocale(locale === 'zh' ? 'en' : 'zh')}
+      className="cursor-pointer flex items-center gap-1 rounded-md border px-2 py-1 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+      title="Switch language"
+    >
+      <Globe className="h-3.5 w-3.5" />
+      {locale === 'zh' ? '中文' : 'EN'}
+    </button>
   );
 }

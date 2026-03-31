@@ -20,6 +20,7 @@ import {
   AlertTriangle,
   CheckCircle2,
   Info,
+  RefreshCw,
 } from 'lucide-react';
 import { api } from '@/lib/api';
 import { Badge } from '@/components/ui/badge';
@@ -137,6 +138,13 @@ export default function DiagnosticDetailPage() {
     },
   });
 
+  const rerunMutation = useMutation({
+    mutationFn: () => api.diagnostics.rerun(params.id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['diagnostic', params.id] });
+    },
+  });
+
   // Radar data
   const radarData = useMemo(() => {
     if (!diag?.module_scores) return [];
@@ -206,6 +214,16 @@ export default function DiagnosticDetailPage() {
             {diag.company_name || '未命名企业'}
           </h1>
           <Badge className={statusCfg.className}>{statusCfg.label}</Badge>
+          <Button
+            variant="outline"
+            size="sm"
+            className="cursor-pointer gap-1.5"
+            disabled={rerunMutation.isPending}
+            onClick={() => rerunMutation.mutate()}
+          >
+            <RefreshCw className={`h-3.5 w-3.5 ${rerunMutation.isPending ? 'animate-spin' : ''}`} />
+            {rerunMutation.isPending ? '重新诊断中...' : '重新诊断 Rerun'}
+          </Button>
         </div>
       </div>
 
@@ -390,15 +408,26 @@ export default function DiagnosticDetailPage() {
             <CardHeader className="border-b">
               <CardTitle>报告操作 Report Actions</CardTitle>
             </CardHeader>
-            <CardContent className="pt-4">
+            <CardContent className="pt-4 space-y-3">
               {diag.report_id ? (
-                <Button
-                  className="w-full cursor-pointer bg-emerald-500 text-white hover:bg-emerald-600"
-                  onClick={() => router.push(`/diagnostics/${diag.id}/report`)}
-                >
-                  <ExternalLink className="mr-1.5 h-4 w-4" />
-                  查看报告 View Report
-                </Button>
+                <>
+                  <Button
+                    className="w-full cursor-pointer bg-emerald-500 text-white hover:bg-emerald-600"
+                    onClick={() => router.push(`/diagnostics/${diag.id}/report`)}
+                  >
+                    <ExternalLink className="mr-1.5 h-4 w-4" />
+                    查看报告 View Report
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="w-full cursor-pointer gap-1.5"
+                    disabled={generateMutation.isPending}
+                    onClick={() => generateMutation.mutate()}
+                  >
+                    <RefreshCw className={`h-3.5 w-3.5 ${generateMutation.isPending ? 'animate-spin' : ''}`} />
+                    {generateMutation.isPending ? '重新生成中...' : '重新生成报告 Regenerate Report'}
+                  </Button>
+                </>
               ) : (
                 <div className="space-y-3">
                   <p className="text-sm text-muted-foreground">

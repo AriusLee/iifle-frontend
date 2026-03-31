@@ -148,6 +148,8 @@ export const api = {
       fetchApi<any>(`/diagnostics/${id}/submit`, { method: 'POST' }),
     generateReport: (id: string) =>
       fetchApi<any>(`/diagnostics/${id}/generate-report`, { method: 'POST' }),
+    rerun: (id: string) =>
+      fetchApi<any>(`/diagnostics/${id}/rerun`, { method: 'POST' }),
     getReport: (id: string) =>
       fetchApi<any>(`/diagnostics/${id}/report`),
   },
