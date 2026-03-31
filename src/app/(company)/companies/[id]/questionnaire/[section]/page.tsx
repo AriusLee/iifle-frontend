@@ -41,15 +41,17 @@ export default function QuestionnaireSectionPage({
   const [otherAnswers, setOtherAnswers] = useState<Record<string, string>>({});
   const [editing, setEditing] = useState(false);
 
+  const diagnosticId = diagnostic?.id;
   useEffect(() => {
-    if (!existingAnswers) return;
+    if (!diagnostic?.answers || !sectionData) return;
     const init: Record<string, string> = {};
-    sectionData?.questions.forEach((q) => {
-      const val = existingAnswers[q.id];
+    sectionData.questions.forEach((q) => {
+      const val = diagnostic.answers[q.id];
       if (typeof val === 'string') init[q.id] = val;
     });
     setAnswers(init);
-  }, [existingAnswers, sectionData]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [diagnosticId, sectionKey]);
 
   const saveMutation = useMutation({
     mutationFn: async () => {
