@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Activity,
   CheckCircle2,
@@ -10,7 +10,9 @@ import {
   Loader2,
   ClipboardList,
   ArrowUpDown,
+  Trash2,
 } from 'lucide-react';
+import { toast } from 'sonner';
 import { api } from '@/lib/api';
 import { useT } from '@/lib/i18n';
 import { Badge } from '@/components/ui/badge';
@@ -69,9 +71,11 @@ function getScoreColor(score: number | null): string {
 
 export default function CompaniesPage() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { t, locale } = useT();
   const [sortField, setSortField] = useState<SortField>('date');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
+  const [deleting, setDeleting] = useState<string | null>(null);
 
   const { data: diagnostics, isLoading, error } = useQuery<Diagnostic[]>({
     queryKey: ['diagnostics'],
@@ -240,6 +244,7 @@ export default function CompaniesPage() {
                       <ArrowUpDown className="h-3 w-3" />
                     </button>
                   </TableHead>
+                  <TableHead className="w-10"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -283,6 +288,30 @@ export default function CompaniesPage() {
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">
                         {formatDate(d.submitted_at || d.created_at)}
+                      </TableCell>
+                      <TableCell>
+                        <button
+                          className="cursor-pointer p-1.5 rounded-md text-muted-foreground hover:text-red-600 hover:bg-red-50 transition-colors"
+                          disabled={deleting === d.company_id}
+                          onClick={async (e) => {
+                            e.stopPropagation();
+                            if (!confirm(t('确定删除该企业？', 'Delete this company?'))) return;
+                            setDeleting(d.company_id);
+                            try {
+                              await api.companies.delete(d.company_id);
+                              queryClient.invalidateQueries({ queryKey: ['diagnostics'] });
+                              toast.success(t('已删除', 'Deleted'));
+                            } catch (err: any) {
+                              toast.error(err.message);
+                            } finally {
+                              setDeleting(null);
+                            }
+                          }}
+                        >
+                          {deleting === d.company_id
+                            ? <Loader2 className="h-4 w-4 animate-spin" />
+                            : <Trash2 className="h-4 w-4" />}
+                        </button>
                       </TableCell>
                     </TableRow>
                   );

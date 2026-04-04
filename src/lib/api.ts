@@ -52,6 +52,8 @@ export const api = {
       fetchApi<Company>('/companies', { method: 'POST', body: JSON.stringify(data) }),
     update: (id: string, data: any) =>
       fetchApi<Company>(`/companies/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    delete: (id: string) =>
+      fetchApi<void>(`/companies/${id}`, { method: 'DELETE' }),
   },
   intake: {
     getStage: (companyId: string, stage: string) =>
