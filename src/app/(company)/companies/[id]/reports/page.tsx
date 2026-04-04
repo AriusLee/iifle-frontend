@@ -91,11 +91,11 @@ export default function ReportsPage({ params }: { params: Promise<{ id: string }
     try {
       const diagnostics = await api.diagnostics.list();
       const diagnostic = diagnostics.find(
-        (d: any) => d.company_id === id && d.status === 'completed'
+        (d: any) => d.company_id === id && (d.status === 'completed' || d.status === 'submitted' || d.sections_submitted?.length > 0)
       );
 
       if (!diagnostic) {
-        toast.error('No completed diagnostic found');
+        toast.error('No scored diagnostic found. Please complete at least one section first.');
         return;
       }
 
