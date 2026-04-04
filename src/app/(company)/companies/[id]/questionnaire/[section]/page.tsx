@@ -5,7 +5,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Loader2, CheckCircle2, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
 import { api } from '@/lib/api';
-import { SECTIONS } from '@/lib/questionnaire-data';
+import { SECTIONS, translateAnswer } from '@/lib/questionnaire-data';
 import { useT } from '@/lib/i18n';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -201,16 +201,16 @@ export default function QuestionnaireSectionPage({
                   <div className="flex flex-wrap gap-1.5 ml-7">
                     {q.options.map((opt) => (
                       <button
-                        key={opt}
+                        key={opt.zh}
                         type="button"
-                        onClick={() => setAnswers((prev) => ({ ...prev, [q.id]: opt }))}
+                        onClick={() => setAnswers((prev) => ({ ...prev, [q.id]: opt.zh }))}
                         className={`cursor-pointer rounded-full px-3 py-1 text-xs font-medium border transition-colors ${
-                          currentVal === opt
+                          currentVal === opt.zh
                             ? 'border-emerald-400 bg-emerald-50 text-emerald-700'
                             : 'border-gray-200 text-gray-600 hover:border-gray-300 hover:bg-gray-50'
                         }`}
                       >
-                        {opt}
+                        {t(opt.zh, opt.en)}
                       </button>
                     ))}
                     <button
@@ -237,7 +237,11 @@ export default function QuestionnaireSectionPage({
                   <div className="ml-7 flex items-center gap-1.5">
                     <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
                     <span className="text-xs font-medium text-emerald-700 bg-emerald-50 rounded-full px-2.5 py-0.5">
-                      {typeof existingVal === 'string' ? existingVal : Array.isArray(existingVal) ? existingVal.join(', ') : '--'}
+                      {typeof existingVal === 'string'
+                        ? t(existingVal, translateAnswer(q.id, existingVal))
+                        : Array.isArray(existingVal)
+                        ? existingVal.map((v) => t(v, translateAnswer(q.id, v))).join(', ')
+                        : '--'}
                     </span>
                   </div>
                 )}
