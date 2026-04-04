@@ -1,9 +1,9 @@
 'use client';
 
 import { use, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
-import { FileText, Loader2, Plus } from 'lucide-react';
+import { FileText, Loader2, Plus, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { api } from '@/lib/api';
 import { Card, CardContent } from '@/components/ui/card';
@@ -68,7 +68,9 @@ function formatDate(dateStr: string): string {
 export default function ReportsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [generating, setGenerating] = useState(false);
+  const [deleting, setDeleting] = useState<string | null>(null);
 
   const { data: reports, isLoading } = useQuery({
     queryKey: ['reports', id],
@@ -174,6 +176,7 @@ export default function ReportsPage({ params }: { params: Promise<{ id: string }
                   <TableHead>Status</TableHead>
                   <TableHead>Language</TableHead>
                   <TableHead className="text-right">Date</TableHead>
+                  <TableHead className="w-10"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -205,6 +208,30 @@ export default function ReportsPage({ params }: { params: Promise<{ id: string }
                       </TableCell>
                       <TableCell className="text-right text-sm text-muted-foreground">
                         {formatDate(report.created_at)}
+                      </TableCell>
+                      <TableCell>
+                        <button
+                          className="cursor-pointer p-1.5 rounded-md text-muted-foreground hover:text-red-600 hover:bg-red-50 transition-colors"
+                          disabled={deleting === report.id}
+                          onClick={async (e) => {
+                            e.stopPropagation();
+                            if (!confirm('Delete this report?')) return;
+                            setDeleting(report.id);
+                            try {
+                              await api.reports.delete(id, report.id);
+                              queryClient.invalidateQueries({ queryKey: ['reports', id] });
+                              toast.success('Report deleted');
+                            } catch (err: any) {
+                              toast.error(err.message);
+                            } finally {
+                              setDeleting(null);
+                            }
+                          }}
+                        >
+                          {deleting === report.id
+                            ? <Loader2 className="h-4 w-4 animate-spin" />
+                            : <Trash2 className="h-4 w-4" />}
+                        </button>
                       </TableCell>
                     </TableRow>
                   );

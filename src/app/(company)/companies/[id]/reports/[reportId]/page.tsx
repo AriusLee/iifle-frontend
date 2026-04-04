@@ -22,6 +22,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
+import Markdown from 'react-markdown';
 import type { ReportDetail } from '@/types';
 
 const STATUS_MAP: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' }> = {
@@ -227,9 +228,28 @@ export default function ReportViewPage({
                 </CardHeader>
                 <CardContent>
                   {content ? (
-                    <div className="prose prose-sm max-w-none text-foreground/90 whitespace-pre-wrap leading-relaxed">
+                    <Markdown
+                      components={{
+                        h1: ({ children }) => <h1 className="text-xl font-bold mt-4 mb-2 first:mt-0">{children}</h1>,
+                        h2: ({ children }) => <h2 className="text-lg font-semibold mt-4 mb-2 first:mt-0">{children}</h2>,
+                        h3: ({ children }) => <h3 className="text-base font-semibold mt-3 mb-1.5">{children}</h3>,
+                        h4: ({ children }) => <h4 className="text-sm font-semibold mt-2 mb-1">{children}</h4>,
+                        p: ({ children }) => <p className="text-sm leading-relaxed text-foreground/90 mb-3 last:mb-0">{children}</p>,
+                        ul: ({ children }) => <ul className="list-disc pl-5 mb-3 space-y-1">{children}</ul>,
+                        ol: ({ children }) => <ol className="list-decimal pl-5 mb-3 space-y-1">{children}</ol>,
+                        li: ({ children }) => <li className="text-sm leading-relaxed text-foreground/90">{children}</li>,
+                        strong: ({ children }) => <strong className="font-semibold text-foreground">{children}</strong>,
+                        em: ({ children }) => <em className="italic">{children}</em>,
+                        blockquote: ({ children }) => <blockquote className="border-l-3 border-emerald-300 pl-4 py-1 my-3 bg-emerald-50/50 rounded-r-lg">{children}</blockquote>,
+                        hr: () => <hr className="my-4 border-border" />,
+                        table: ({ children }) => <div className="overflow-x-auto mb-3"><table className="w-full text-sm border-collapse">{children}</table></div>,
+                        thead: ({ children }) => <thead className="bg-muted/50">{children}</thead>,
+                        th: ({ children }) => <th className="border border-border px-3 py-2 text-left font-semibold text-xs">{children}</th>,
+                        td: ({ children }) => <td className="border border-border px-3 py-2 text-sm">{children}</td>,
+                      }}
+                    >
                       {content}
-                    </div>
+                    </Markdown>
                   ) : (
                     <p className="text-sm text-muted-foreground italic">
                       No content available for this section.

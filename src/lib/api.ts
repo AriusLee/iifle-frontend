@@ -134,6 +134,8 @@ export const api = {
         method: 'POST',
         body: JSON.stringify(data),
       }),
+    delete: (companyId: string, reportId: string) =>
+      fetchApi<void>(`/companies/${companyId}/reports/${reportId}`, { method: 'DELETE' }),
     exportPdfUrl: (companyId: string, reportId: string, language: string = 'en') =>
       `${API_URL}/companies/${companyId}/reports/${reportId}/export/pdf?language=${language}`,
   },
@@ -146,6 +148,8 @@ export const api = {
       fetchApi<any>(`/diagnostics/${id}/draft`, { method: 'PUT', body: JSON.stringify(data) }),
     submit: (id: string) =>
       fetchApi<any>(`/diagnostics/${id}/submit`, { method: 'POST' }),
+    submitSection: (id: string, sectionKey: string, data: { answers: Record<string, string | string[]>; other_answers?: Record<string, string> }) =>
+      fetchApi<any>(`/diagnostics/${id}/sections/${sectionKey}/submit`, { method: 'POST', body: JSON.stringify(data) }),
     generateReport: (id: string) =>
       fetchApi<any>(`/diagnostics/${id}/generate-report`, { method: 'POST' }),
     rerun: (id: string) =>

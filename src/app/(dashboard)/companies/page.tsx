@@ -12,6 +12,7 @@ import {
   ArrowUpDown,
 } from 'lucide-react';
 import { api } from '@/lib/api';
+import { useT } from '@/lib/i18n';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -44,12 +45,12 @@ interface Diagnostic {
 type SortField = 'date' | 'score' | 'company';
 type SortDir = 'asc' | 'desc';
 
-const STATUS_CONFIG: Record<string, { label: string; className: string }> = {
-  draft: { label: '草稿', className: 'bg-gray-100 text-gray-700' },
-  submitted: { label: '已提交', className: 'bg-blue-100 text-blue-700' },
-  scoring: { label: '评分中', className: 'bg-yellow-100 text-yellow-700' },
-  completed: { label: '已完成', className: 'bg-emerald-100 text-emerald-700' },
-  failed: { label: '失败', className: 'bg-red-100 text-red-700' },
+const STATUS_CONFIG: Record<string, { zh: string; en: string; className: string }> = {
+  draft: { zh: '草稿', en: 'Draft', className: 'bg-gray-100 text-gray-700' },
+  submitted: { zh: '已提交', en: 'Submitted', className: 'bg-blue-100 text-blue-700' },
+  scoring: { zh: '评分中', en: 'Scoring', className: 'bg-yellow-100 text-yellow-700' },
+  completed: { zh: '已完成', en: 'Completed', className: 'bg-emerald-100 text-emerald-700' },
+  failed: { zh: '失败', en: 'Failed', className: 'bg-red-100 text-red-700' },
 };
 
 const READINESS_DOT: Record<string, string> = {
@@ -68,6 +69,7 @@ function getScoreColor(score: number | null): string {
 
 export default function CompaniesPage() {
   const router = useRouter();
+  const { t, locale } = useT();
   const [sortField, setSortField] = useState<SortField>('date');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
 
@@ -117,7 +119,7 @@ export default function CompaniesPage() {
 
   function formatDate(dateStr: string | null): string {
     if (!dateStr) return '--';
-    return new Date(dateStr).toLocaleDateString('zh-CN', {
+    return new Date(dateStr).toLocaleDateString(locale === 'zh' ? 'zh-CN' : 'en-US', {
       year: 'numeric',
       month: '2-digit',
       day: '2-digit',
@@ -128,9 +130,9 @@ export default function CompaniesPage() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Diagnostic Dashboard</h1>
+        <h1 className="text-2xl font-bold tracking-tight">{t('诊断仪表板', 'Diagnostic Dashboard')}</h1>
         <p className="text-sm text-muted-foreground">
-          Unicorn Growth Diagnostic (独角兽成长诊断)
+          {t('独角兽成长诊断', 'Unicorn Growth Diagnostic')}
         </p>
       </div>
 
@@ -142,7 +144,7 @@ export default function CompaniesPage() {
               <Activity className="h-5 w-5 text-emerald-600" />
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">总诊断数 Total</p>
+              <p className="text-sm text-muted-foreground">{t('总诊断数', 'Total')}</p>
               <p className="text-2xl font-bold">{stats.total}</p>
             </div>
           </CardContent>
@@ -153,7 +155,7 @@ export default function CompaniesPage() {
               <CheckCircle2 className="h-5 w-5 text-emerald-600" />
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">已完成 Completed</p>
+              <p className="text-sm text-muted-foreground">{t('已完成', 'Completed')}</p>
               <p className="text-2xl font-bold">{stats.completed}</p>
             </div>
           </CardContent>
@@ -164,7 +166,7 @@ export default function CompaniesPage() {
               <TrendingUp className="h-5 w-5 text-emerald-600" />
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">平均分 Avg Score</p>
+              <p className="text-sm text-muted-foreground">{t('平均分', 'Avg Score')}</p>
               <p className="text-2xl font-bold">{stats.avgScore || '--'}</p>
             </div>
           </CardContent>
@@ -182,7 +184,7 @@ export default function CompaniesPage() {
       {error && (
         <div className="rounded-lg border border-destructive/20 bg-destructive/5 p-6 text-center">
           <p className="text-sm text-destructive">
-            Failed to load diagnostics. Please try again.
+            {t('加载诊断失败，请重试。', 'Failed to load diagnostics. Please try again.')}
           </p>
         </div>
       )}
@@ -191,9 +193,9 @@ export default function CompaniesPage() {
       {diagnostics && diagnostics.length === 0 && (
         <div className="flex flex-col items-center justify-center rounded-lg border border-dashed py-20">
           <ClipboardList className="h-12 w-12 text-muted-foreground/50" />
-          <h3 className="mt-4 text-lg font-semibold">暂无诊断记录</h3>
+          <h3 className="mt-4 text-lg font-semibold">{t('暂无诊断记录', 'No Diagnostics Yet')}</h3>
           <p className="mt-1 text-sm text-muted-foreground">
-            No diagnostics yet. Customers can start a diagnostic from the questionnaire page.
+            {t('客户可从问卷页面开始诊断。', 'Customers can start a diagnostic from the questionnaire page.')}
           </p>
         </div>
       )}
@@ -202,7 +204,7 @@ export default function CompaniesPage() {
       {sorted.length > 0 && (
         <Card>
           <CardHeader className="border-b">
-            <CardTitle>诊断列表 Diagnostic List</CardTitle>
+            <CardTitle>{t('诊断列表', 'Diagnostic List')}</CardTitle>
           </CardHeader>
           <CardContent className="p-0">
             <Table>
@@ -213,28 +215,28 @@ export default function CompaniesPage() {
                       className="flex cursor-pointer items-center gap-1"
                       onClick={() => toggleSort('company')}
                     >
-                      企业名称 Company
+                      {t('企业名称', 'Company')}
                       <ArrowUpDown className="h-3 w-3" />
                     </button>
                   </TableHead>
-                  <TableHead>状态 Status</TableHead>
+                  <TableHead>{t('状态', 'Status')}</TableHead>
                   <TableHead>
                     <button
                       className="flex cursor-pointer items-center gap-1"
                       onClick={() => toggleSort('score')}
                     >
-                      总分 Score
+                      {t('总分', 'Score')}
                       <ArrowUpDown className="h-3 w-3" />
                     </button>
                   </TableHead>
-                  <TableHead>企业阶段 Stage</TableHead>
-                  <TableHead>资本准备 Capital</TableHead>
+                  <TableHead>{t('企业阶段', 'Stage')}</TableHead>
+                  <TableHead>{t('资本准备', 'Capital Readiness')}</TableHead>
                   <TableHead>
                     <button
                       className="flex cursor-pointer items-center gap-1"
                       onClick={() => toggleSort('date')}
                     >
-                      提交日期 Date
+                      {t('提交日期', 'Date')}
                       <ArrowUpDown className="h-3 w-3" />
                     </button>
                   </TableHead>
@@ -250,11 +252,11 @@ export default function CompaniesPage() {
                       onClick={() => router.push(`/companies/${d.company_id}`)}
                     >
                       <TableCell className="font-medium">
-                        {d.company_name || '未命名企业'}
+                        {d.company_name || t('未命名企业', 'Unnamed Company')}
                       </TableCell>
                       <TableCell>
                         <Badge className={statusCfg.className}>
-                          {statusCfg.label}
+                          {t(statusCfg.zh, statusCfg.en)}
                         </Badge>
                       </TableCell>
                       <TableCell>

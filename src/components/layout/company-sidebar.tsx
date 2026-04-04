@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useQuery } from '@tanstack/react-query';
 import {
   ArrowLeft,
   LayoutDashboard,
@@ -9,9 +10,11 @@ import {
   FileText,
   FolderOpen,
   Settings,
+  CheckCircle2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useT } from '@/lib/i18n';
+import { api } from '@/lib/api';
 
 interface CompanySidebarProps {
   companyId: string;
@@ -32,6 +35,13 @@ export function CompanySidebar({ companyId, companyName, className }: CompanySid
   const pathname = usePathname();
   const { t } = useT();
   const base = `/companies/${companyId}`;
+
+  const { data: diagnostics } = useQuery<any[]>({
+    queryKey: ['diagnostics'],
+    queryFn: () => api.diagnostics.list(),
+  });
+  const diagnostic = diagnostics?.find((d: any) => d.company_id === companyId);
+  const sectionsSubmitted: string[] = diagnostic?.sections_submitted || [];
 
   function isActive(href: string) {
     if (href === base) return pathname === href;
@@ -90,7 +100,10 @@ export function CompanySidebar({ companyId, companyName, className }: CompanySid
                   <span className="inline-flex h-5 w-5 items-center justify-center rounded text-[10px] font-bold bg-slate-700 text-slate-300 shrink-0">
                     {s.key}
                   </span>
-                  <span className="truncate">{t(s.zh, s.en)}</span>
+                  <span className="truncate flex-1">{t(s.zh, s.en)}</span>
+                  {sectionsSubmitted.includes(s.key.toLowerCase()) && (
+                    <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
+                  )}
                 </Link>
               );
             })}
