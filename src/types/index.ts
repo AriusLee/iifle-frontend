@@ -116,6 +116,10 @@ export interface ReportSummary {
   approved_at: string | null;
   created_at: string;
   updated_at: string;
+  // Live progress while a report is generating (populated by the list endpoint)
+  sections_done?: number;
+  sections_total?: number;
+  sections_done_keys?: string[];
 }
 
 export interface ReportSection {

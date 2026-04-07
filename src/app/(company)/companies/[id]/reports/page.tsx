@@ -30,6 +30,21 @@ const TYPE_LABELS: Record<string, string> = {
   diagnostic: '诊断',
 };
 
+// Diagnostic report section keys → human label, in canonical sort order.
+// Mirrors backend DIAGNOSTIC_SECTIONS so we can show progress like
+// "Working on: 上市要求对比, 建议承接方向" while the AI is running.
+const DIAGNOSTIC_SECTION_LABELS: { key: string; label: string }[] = [
+  { key: 'enterprise_profile', label: '企业画像与阶段判断' },
+  { key: 'key_highlights', label: '关键勾选摘要' },
+  { key: 'six_scores', label: '六大结构评分' },
+  { key: 'ai_assessment', label: 'AI 总判断' },
+  { key: 'unicorn_pathway', label: '独角兽路径图' },
+  { key: 'action_plan_90d', label: '90 天行动建议' },
+  { key: 'upgrade_assessment', label: '升级判断' },
+  { key: 'listing_requirements', label: '上市要求对比' },
+  { key: 'next_steps', label: '建议承接方向' },
+];
+
 const STATUS_CONFIG: Record<string, { label: string; className: string }> = {
   generating: {
     label: 'Generating',
@@ -75,9 +90,11 @@ export default function ReportsPage({ params }: { params: Promise<{ id: string }
   const { data: reports, isLoading } = useQuery({
     queryKey: ['reports', id],
     queryFn: () => api.reports.list(id),
+    // Poll every 2s while a report is generating so the section progress
+    // count climbs visibly as the AI works through each section.
     refetchInterval: (query) => {
       const data = query.state.data as ReportSummary[] | undefined;
-      if (data?.some((r) => r.status === 'generating')) return 3000;
+      if (data?.some((r) => r.status === 'generating')) return 2000;
       return false;
     },
   });
@@ -100,6 +117,9 @@ export default function ReportsPage({ params }: { params: Promise<{ id: string }
       }
 
       await api.diagnostics.generateReport(diagnostic.id);
+      // Invalidate so the new "generating" report row appears immediately —
+      // without this the list waits up to a refetch interval to show it.
+      await queryClient.invalidateQueries({ queryKey: ['reports', id] });
       toast.success('Report generation started');
     } catch (err: any) {
       toast.error(err.message || 'Failed to generate report');
@@ -182,6 +202,18 @@ export default function ReportsPage({ params }: { params: Promise<{ id: string }
               <TableBody>
                 {sortedReports.map((report) => {
                   const statusCfg = STATUS_CONFIG[report.status] || STATUS_CONFIG.draft;
+                  const isGenerating = report.status === 'generating';
+                  const doneKeys = new Set(report.sections_done_keys || []);
+                  const total = report.sections_total || DIAGNOSTIC_SECTION_LABELS.length;
+                  const done = report.sections_done || 0;
+                  const percent = total > 0 ? Math.round((done / total) * 100) : 0;
+                  // For diagnostic reports we know the canonical section names,
+                  // so we can show "currently working on…". For other report
+                  // types we just show the count.
+                  const isDiagnostic = report.report_type === 'diagnostic';
+                  const inProgress = isDiagnostic
+                    ? DIAGNOSTIC_SECTION_LABELS.filter((s) => !doneKeys.has(s.key)).slice(0, 3)
+                    : [];
                   return (
                     <TableRow
                       key={report.id}
@@ -191,7 +223,32 @@ export default function ReportsPage({ params }: { params: Promise<{ id: string }
                       }
                     >
                       <TableCell className="font-medium">
-                        {report.title || 'Untitled Report'}
+                        <div>{report.title || 'Untitled Report'}</div>
+                        {isGenerating && (
+                          <div className="mt-2 max-w-md">
+                            <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
+                              <Loader2 className="h-3 w-3 animate-spin text-yellow-600" />
+                              <span className="font-medium text-yellow-700 dark:text-yellow-400">
+                                {done} / {total} sections complete
+                              </span>
+                              <span className="text-muted-foreground/60">·</span>
+                              <span>{percent}%</span>
+                            </div>
+                            <div className="h-1 rounded-full bg-muted overflow-hidden">
+                              <div
+                                className="h-full bg-yellow-500 transition-all duration-500"
+                                style={{ width: `${percent}%` }}
+                              />
+                            </div>
+                            {isDiagnostic && inProgress.length > 0 && (
+                              <p className="mt-1.5 text-[11px] text-muted-foreground">
+                                <span className="font-medium">Working on: </span>
+                                {inProgress.map((s) => s.label).join('、')}
+                                {DIAGNOSTIC_SECTION_LABELS.filter((s) => !doneKeys.has(s.key)).length > 3 && '…'}
+                              </p>
+                            )}
+                          </div>
+                        )}
                       </TableCell>
                       <TableCell>
                         <Badge variant="secondary">

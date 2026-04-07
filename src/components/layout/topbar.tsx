@@ -54,9 +54,18 @@ export function Topbar({ onMenuClick, companyId, companyName }: TopbarProps) {
         <span className="sr-only">Toggle menu</span>
       </Button>
 
-      {/* Left side */}
+      {/* Left side — CompanySelector is client-only to avoid Base UI hydration
+          mismatch (its useQuery + dropdown useId counters differ SSR vs client). */}
       {companyId ? (
-        <CompanySelector companyId={companyId} companyName={companyName} />
+        mounted ? (
+          <CompanySelector companyId={companyId} companyName={companyName} />
+        ) : (
+          <div className="flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm font-semibold">
+            <span className="max-w-[200px] truncate text-foreground">
+              {companyName || 'Loading...'}
+            </span>
+          </div>
+        )
       ) : (
         <h1 className="text-sm font-semibold text-foreground">
           IIFLE AI Platform
