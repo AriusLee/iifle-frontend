@@ -48,28 +48,35 @@ export default function ReportViewPage({
 }) {
   const { id, reportId } = use(params);
   const [showChinese, setShowChinese] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
 
   const handleExportPdf = async () => {
-    const lang = showChinese ? 'cn' : 'en';
-    const url = api.reports.exportPdfUrl(id, reportId, lang);
-    const session = (await getSession()) as any;
-    const token = session?.accessToken;
+    if (isExporting) return;
+    setIsExporting(true);
+    try {
+      const lang = showChinese ? 'cn' : 'en';
+      const url = api.reports.exportPdfUrl(id, reportId, lang);
+      const session = (await getSession()) as any;
+      const token = session?.accessToken;
 
-    const res = await fetch(url, {
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
-    });
+      const res = await fetch(url, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
 
-    if (!res.ok) return;
+      if (!res.ok) return;
 
-    const blob = await res.blob();
-    const blobUrl = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = blobUrl;
-    a.download = res.headers.get('content-disposition')?.match(/filename="(.+)"/)?.[1] || 'report.pdf';
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(blobUrl);
+      const blob = await res.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = blobUrl;
+      a.download = res.headers.get('content-disposition')?.match(/filename="(.+)"/)?.[1] || 'report.pdf';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(blobUrl);
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   const { data: report, isLoading } = useQuery({
@@ -199,12 +206,31 @@ export default function ReportViewPage({
             size="sm"
             className="cursor-pointer gap-2"
             onClick={() => handleExportPdf()}
+            disabled={isExporting}
           >
-            <Download className="h-3.5 w-3.5" />
-            Export PDF
+            {isExporting ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Download className="h-3.5 w-3.5" />
+            )}
+            {isExporting ? 'Exporting...' : 'Export PDF'}
           </Button>
         </div>
       </div>
+
+      {isExporting && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm">
+          <Card className="w-[320px]">
+            <CardContent className="flex flex-col items-center justify-center py-10">
+              <Loader2 className="h-10 w-10 animate-spin text-primary mb-4" />
+              <p className="text-base font-medium">Generating PDF...</p>
+              <p className="text-xs text-muted-foreground mt-1 text-center">
+                Preparing your report for download. This may take a few seconds.
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       {/* Report sections */}
       <div className="space-y-6">
