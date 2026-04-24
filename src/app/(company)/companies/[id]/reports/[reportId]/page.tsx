@@ -9,11 +9,11 @@ import {
   CheckCircle2,
   Clock,
   Download,
-  Languages,
   Zap,
   Star,
   Crown,
 } from 'lucide-react';
+import { useI18n } from '@/lib/i18n';
 import Link from 'next/link';
 import { getSession } from 'next-auth/react';
 import { api } from '@/lib/api';
@@ -47,8 +47,11 @@ export default function ReportViewPage({
   params: Promise<{ id: string; reportId: string }>;
 }) {
   const { id, reportId } = use(params);
-  const [showChinese, setShowChinese] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+  // Language follows the global header toggle. The PDF export uses the same
+  // locale so the download matches what the user sees on screen.
+  const locale = useI18n((s) => s.locale);
+  const showChinese = locale === 'zh';
 
   const handleExportPdf = async () => {
     if (isExporting) return;
@@ -115,7 +118,6 @@ export default function ReportViewPage({
   const tier = (report as any).tier || 'standard';
   const tierCfg = TIER_CONFIG[tier] || TIER_CONFIG.standard;
   const TierIcon = tierCfg.icon;
-  const hasChinese = report.sections?.some((s) => s.content_cn);
 
   if (report.status === 'generating') {
     return (
@@ -174,33 +176,6 @@ export default function ReportViewPage({
         </div>
 
         <div className="flex items-center gap-2">
-          {/* Language toggle */}
-          {hasChinese && (
-            <div className="flex items-center rounded-lg border p-0.5">
-              <button
-                onClick={() => setShowChinese(false)}
-                className={cn(
-                  'px-2.5 py-1 text-xs rounded-md cursor-pointer transition-colors',
-                  !showChinese
-                    ? 'bg-primary text-primary-foreground'
-                    : 'text-muted-foreground hover:text-foreground'
-                )}
-              >
-                EN
-              </button>
-              <button
-                onClick={() => setShowChinese(true)}
-                className={cn(
-                  'px-2.5 py-1 text-xs rounded-md cursor-pointer transition-colors',
-                  showChinese
-                    ? 'bg-primary text-primary-foreground'
-                    : 'text-muted-foreground hover:text-foreground'
-                )}
-              >
-                中文
-              </button>
-            </div>
-          )}
           <Button
             variant="outline"
             size="sm"
@@ -213,7 +188,7 @@ export default function ReportViewPage({
             ) : (
               <Download className="h-3.5 w-3.5" />
             )}
-            {isExporting ? 'Exporting...' : 'Export PDF'}
+            {isExporting ? 'Exporting...' : `Export PDF · ${showChinese ? '中文' : 'EN'}`}
           </Button>
         </div>
       </div>

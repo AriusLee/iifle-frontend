@@ -120,6 +120,7 @@ export default function ReportsPage({ params }: { params: Promise<{ id: string }
   const queryClient = useQueryClient();
   const [generating, setGenerating] = useState<'diagnostic' | 'battle_map' | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [typeFilter, setTypeFilter] = useState<string>('all');
 
   const { data: reports, isLoading } = useQuery({
     queryKey: ['reports', id],
@@ -154,6 +155,28 @@ export default function ReportsPage({ params }: { params: Promise<{ id: string }
   const sortedReports = [...(reports || [])].sort(
     (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
   );
+
+  // Type filter: build pill list from whatever types are actually present,
+  // so the filter bar reflects reality instead of listing empty categories.
+  const typeCounts: Record<string, number> = sortedReports.reduce(
+    (acc, r) => ({ ...acc, [r.report_type]: (acc[r.report_type] || 0) + 1 }),
+    {} as Record<string, number>,
+  );
+  const filterTypes: { key: string; label: string }[] = [
+    { key: 'all', label: 'All' },
+    // Ordered so the primary report types always appear first when present.
+    ...(['diagnostic', 'battle_map', 'master'] as const)
+      .filter((k) => typeCounts[k] > 0)
+      .map((k) => ({ key: k, label: TYPE_LABELS[k] || k })),
+    // Any remaining types (module_1..6, etc.) appended in insertion order.
+    ...Object.keys(typeCounts)
+      .filter((k) => !['diagnostic', 'battle_map', 'master'].includes(k))
+      .map((k) => ({ key: k, label: TYPE_LABELS[k] || k })),
+  ];
+
+  const filteredReports = typeFilter === 'all'
+    ? sortedReports
+    : sortedReports.filter((r) => r.report_type === typeFilter);
 
   const activeGenerating = sortedReports.find((r) => r.status === 'generating') || null;
   const overlayOpen = !!generating || !!activeGenerating;
@@ -331,6 +354,33 @@ export default function ReportsPage({ params }: { params: Promise<{ id: string }
         </Card>
       )}
 
+      {/* Type filter — only shown when there's more than one type to pick from */}
+      {sortedReports.length > 0 && filterTypes.length > 2 && (
+        <div className="flex items-center gap-1.5 flex-wrap">
+          {filterTypes.map((ft) => {
+            const active = typeFilter === ft.key;
+            const count = ft.key === 'all' ? sortedReports.length : (typeCounts[ft.key] || 0);
+            return (
+              <button
+                key={ft.key}
+                type="button"
+                onClick={() => setTypeFilter(ft.key)}
+                className={`cursor-pointer flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
+                  active
+                    ? 'border-emerald-500 bg-emerald-500 text-white'
+                    : 'border-border text-muted-foreground hover:bg-muted'
+                }`}
+              >
+                <span>{ft.label}</span>
+                <span className={`rounded-full px-1.5 py-0.5 text-[10px] ${active ? 'bg-white/20' : 'bg-muted'}`}>
+                  {count}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+
       {/* Reports table */}
       {sortedReports.length > 0 && (
         <Card>
@@ -347,7 +397,21 @@ export default function ReportsPage({ params }: { params: Promise<{ id: string }
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {sortedReports.map((report) => {
+                {filteredReports.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-center py-10 text-sm text-muted-foreground">
+                      No reports match this filter.{' '}
+                      <button
+                        type="button"
+                        onClick={() => setTypeFilter('all')}
+                        className="cursor-pointer text-emerald-600 hover:underline"
+                      >
+                        Clear filter
+                      </button>
+                    </TableCell>
+                  </TableRow>
+                )}
+                {filteredReports.map((report) => {
                   const statusCfg = STATUS_CONFIG[report.status] || STATUS_CONFIG.draft;
                   const isGenerating = report.status === 'generating';
                   const rowSectionLabels = sectionLabelsFor(report.report_type);

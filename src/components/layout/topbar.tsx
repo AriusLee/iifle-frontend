@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Menu, LogOut, User, MessageSquare, FileText, Globe } from 'lucide-react';
+import { Menu, LogOut, User, FileText, Globe } from 'lucide-react';
 import { signOut, useSession } from 'next-auth/react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -26,7 +26,7 @@ interface TopbarProps {
 
 export function Topbar({ onMenuClick, companyId, companyName }: TopbarProps) {
   const { data: session, status } = useSession();
-  const { rightPanel, toggleChat, toggleReports } = useCompanyStore();
+  const { rightPanel, toggleReports } = useCompanyStore();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -89,18 +89,8 @@ export function Topbar({ onMenuClick, companyId, companyName }: TopbarProps) {
           </Button>
         )}
 
-        {/* Chat toggle (only in company context) */}
-        {companyId && (
-          <Button
-            variant={rightPanel === 'chat' ? 'secondary' : 'ghost'}
-            size="icon"
-            className="cursor-pointer"
-            onClick={toggleChat}
-          >
-            <MessageSquare className="h-5 w-5" />
-            <span className="sr-only">Toggle AI chat</span>
-          </Button>
-        )}
+        {/* AI chat toggle intentionally hidden — backend + ChatPanel are still
+            in the codebase so this can be re-enabled by restoring this block. */}
 
         {/* Language toggle */}
         <LangToggle />

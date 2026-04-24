@@ -5,7 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { CompanySidebar } from '@/components/layout/company-sidebar';
 import { Topbar } from '@/components/layout/topbar';
-import { ChatPanel } from '@/components/layout/chat-panel';
+// import { ChatPanel } from '@/components/layout/chat-panel';  // AI chat hidden
 import { ReportPanel } from '@/components/layout/report-panel';
 import { AiStatusBar } from '@/components/layout/ai-status-bar';
 import { useCompanyStore } from '@/stores/company-store';
@@ -54,11 +54,7 @@ export default function CompanyLayout({
             {children}
           </main>
           {/* Right panel (desktop only, collapsible) */}
-          {rightPanel === 'chat' && (
-            <div className="hidden md:flex">
-              <ChatPanel companyId={id} />
-            </div>
-          )}
+          {/* AI chat panel intentionally hidden. */}
           {rightPanel === 'reports' && (
             <div className="hidden md:flex">
               <ReportPanel companyId={id} />
