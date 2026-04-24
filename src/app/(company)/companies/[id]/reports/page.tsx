@@ -3,12 +3,21 @@
 import { use, useState, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
-import { FileText, Loader2, Plus, Trash2, Sparkles } from 'lucide-react';
+import { FileText, Loader2, Plus, Trash2, Sparkles, Target, ChevronDown, Lock } from 'lucide-react';
 import { toast } from 'sonner';
 import { api } from '@/lib/api';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuGroup,
+} from '@/components/ui/dropdown-menu';
 import {
   Table,
   TableHeader,
@@ -28,11 +37,18 @@ const TYPE_LABELS: Record<string, string> = {
   module_6: '上市',
   master: '综合',
   diagnostic: '诊断',
+  battle_map: '作战图',
 };
 
-// Diagnostic report section keys → human label, in canonical sort order.
-// Mirrors backend DIAGNOSTIC_SECTIONS so we can show progress like
-// "Working on: 上市要求对比, 建议承接方向" while the AI is running.
+const TYPE_COLORS: Record<string, string> = {
+  diagnostic: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
+  battle_map: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400',
+  master: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400',
+};
+
+// Per-report-type section labels. Mirrors the backend section definitions so
+// the overlay can show "Working on: …" with real names while the AI writes
+// each section in parallel.
 const DIAGNOSTIC_SECTION_LABELS: { key: string; label: string }[] = [
   { key: 'enterprise_profile', label: '企业画像与阶段判断' },
   { key: 'key_highlights', label: '关键勾选摘要' },
@@ -44,6 +60,24 @@ const DIAGNOSTIC_SECTION_LABELS: { key: string; label: string }[] = [
   { key: 'listing_requirements', label: '上市要求对比' },
   { key: 'next_steps', label: '建议承接方向' },
 ];
+
+const BATTLE_MAP_SECTION_LABELS: { key: string; label: string }[] = [
+  { key: 'advanced_verdict', label: '进阶总判断' },
+  { key: 'next_stage_goal', label: '下一阶段目标' },
+  { key: 'priority_structures', label: '三大结构优先级' },
+  { key: 'business_model_upgrade', label: '商业模式升级' },
+  { key: 'org_kpi_upgrade', label: '组织与 KPI 升级' },
+  { key: 'profit_finance_readiness', label: '利润质量与财务准备' },
+  { key: 'equity_governance', label: '股权与治理升级' },
+  { key: 'valuation_financing_path', label: '估值与融资路径' },
+  { key: 'timeline_battle_plan', label: '90/180/12个月作战图' },
+  { key: 'next_service_path', label: '升级承接建议' },
+];
+
+function sectionLabelsFor(reportType: string | undefined): { key: string; label: string }[] {
+  if (reportType === 'battle_map') return BATTLE_MAP_SECTION_LABELS;
+  return DIAGNOSTIC_SECTION_LABELS;
+}
 
 const STATUS_CONFIG: Record<string, { label: string; className: string }> = {
   generating: {
@@ -84,14 +118,12 @@ export default function ReportsPage({ params }: { params: Promise<{ id: string }
   const { id } = use(params);
   const router = useRouter();
   const queryClient = useQueryClient();
-  const [generating, setGenerating] = useState(false);
+  const [generating, setGenerating] = useState<'diagnostic' | 'battle_map' | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
 
   const { data: reports, isLoading } = useQuery({
     queryKey: ['reports', id],
     queryFn: () => api.reports.list(id),
-    // Poll every 2s while a report is generating so the section progress
-    // count climbs visibly as the AI works through each section.
     refetchInterval: (query) => {
       const data = query.state.data as ReportSummary[] | undefined;
       if (data?.some((r) => r.status === 'generating')) return 2000;
@@ -99,56 +131,154 @@ export default function ReportsPage({ params }: { params: Promise<{ id: string }
     },
   });
 
+  // Prerequisite data: check whether we can generate each report type.
+  const { data: diagnostics } = useQuery({
+    queryKey: ['diagnostics'],
+    queryFn: () => api.diagnostics.list(),
+  });
+  const companyDiagnostic = diagnostics?.find((d: any) => d.company_id === id) as any;
+  const diagnosticCanRun = !!(
+    companyDiagnostic &&
+    (companyDiagnostic.status === 'completed'
+      || companyDiagnostic.status === 'submitted'
+      || (companyDiagnostic.sections_submitted?.length || 0) > 0)
+  );
+
+  const { data: battleMaps } = useQuery<any[]>({
+    queryKey: ['battlemaps'],
+    queryFn: () => api.battlemaps.list(),
+  });
+  const companyBattleMap = battleMaps?.find((bm: any) => bm.company_id === id);
+  const battleMapCanRun = !!(companyBattleMap && companyBattleMap.variant);
+
   const sortedReports = [...(reports || [])].sort(
     (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
   );
 
-  // The "currently generating" report — newest first if multiple are running.
-  // Drives the full-screen overlay below. The overlay also stays open during
-  // the brief window between clicking Generate and the new row appearing in
-  // the polled list (handled via the local `generating` state).
   const activeGenerating = sortedReports.find((r) => r.status === 'generating') || null;
-  const overlayOpen = generating || !!activeGenerating;
+  const overlayOpen = !!generating || !!activeGenerating;
+  // Pick section labels by the actively-generating report's type; fall back
+  // to whichever flow we just kicked off so the overlay shows the right names
+  // during the ~2s lag before the new row appears in the polled list.
+  const overlayType = activeGenerating?.report_type || generating || undefined;
+  const overlaySectionLabels = sectionLabelsFor(overlayType);
+  const overlayTitle = overlayType === 'battle_map'
+    ? 'Generating Battle Map Report'
+    : 'Generating Diagnostic Report';
 
-  const handleGenerate = async () => {
-    setGenerating(true);
+  const handleGenerateDiagnostic = async () => {
+    if (!diagnosticCanRun || !companyDiagnostic) {
+      toast.error('No scored diagnostic found. Please complete at least one section first.');
+      return;
+    }
+    setGenerating('diagnostic');
     try {
-      const diagnostics = await api.diagnostics.list();
-      const diagnostic = diagnostics.find(
-        (d: any) => d.company_id === id && (d.status === 'completed' || d.status === 'submitted' || d.sections_submitted?.length > 0)
-      );
-
-      if (!diagnostic) {
-        toast.error('No scored diagnostic found. Please complete at least one section first.');
-        return;
-      }
-
-      await api.diagnostics.generateReport(diagnostic.id);
-      // Invalidate so the new "generating" report row appears immediately —
-      // without this the list waits up to a refetch interval to show it.
+      await api.diagnostics.generateReport(companyDiagnostic.id);
       await queryClient.invalidateQueries({ queryKey: ['reports', id] });
-      toast.success('Report generation started');
+      toast.success('Diagnostic report generation started');
     } catch (err: any) {
-      toast.error(err.message || 'Failed to generate report');
+      toast.error(err.message || 'Failed to generate diagnostic report');
     } finally {
-      setGenerating(false);
+      setGenerating(null);
     }
   };
 
-  const GenerateButton = ({ size = 'default' }: { size?: 'default' | 'sm' | 'lg' }) => (
-    <Button
-      size={size}
-      className="cursor-pointer gap-2 bg-emerald-600 hover:bg-emerald-700 text-white"
-      onClick={handleGenerate}
-      disabled={generating}
-    >
-      {generating ? (
-        <Loader2 className="h-4 w-4 animate-spin" />
-      ) : (
-        <Plus className="h-4 w-4" />
-      )}
-      {generating ? 'Generating...' : 'Generate Report'}
-    </Button>
+  const handleGenerateBattleMap = async () => {
+    if (!battleMapCanRun || !companyBattleMap) {
+      toast.error('Battle map must be classified before generating the report.');
+      return;
+    }
+    setGenerating('battle_map');
+    try {
+      await api.battlemaps.generateReport(companyBattleMap.id);
+      await queryClient.invalidateQueries({ queryKey: ['reports', id] });
+      await queryClient.invalidateQueries({ queryKey: ['battlemaps'] });
+      toast.success('Battle map report generation started');
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to generate battle map report');
+    } finally {
+      setGenerating(null);
+    }
+  };
+
+  const GenerateMenu = ({ size = 'default' }: { size?: 'default' | 'sm' | 'lg' }) => (
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        render={
+          <Button
+            size={size}
+            className="cursor-pointer gap-2 bg-emerald-600 hover:bg-emerald-700 text-white"
+            disabled={!!generating}
+          >
+            {generating ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Plus className="h-4 w-4" />
+            )}
+            {generating ? 'Generating...' : 'Generate Report'}
+            <ChevronDown className="h-4 w-4 opacity-70" />
+          </Button>
+        }
+      />
+      <DropdownMenuContent align="end" className="w-64">
+        <DropdownMenuGroup>
+          <DropdownMenuLabel className="text-xs text-muted-foreground">
+            Pick report type
+          </DropdownMenuLabel>
+        </DropdownMenuGroup>
+        <DropdownMenuSeparator />
+
+        <DropdownMenuItem
+          className="cursor-pointer py-2.5"
+          disabled={!diagnosticCanRun}
+          onClick={handleGenerateDiagnostic}
+        >
+          <div className="flex items-start gap-2.5 w-full">
+            <div className="mt-0.5 h-7 w-7 rounded-md bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center shrink-0">
+              <FileText className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-1.5">
+                <p className="text-sm font-medium">诊断报告</p>
+                <span className="text-[10px] text-muted-foreground">Phase 1</span>
+              </div>
+              <p className="text-[11px] text-muted-foreground leading-snug">
+                {diagnosticCanRun
+                  ? '9 章诊断报告 — 企业画像、六大评分、90 天行动'
+                  : '需先完成诊断问卷至少一个分区'}
+              </p>
+            </div>
+            {!diagnosticCanRun && <Lock className="h-3.5 w-3.5 text-muted-foreground shrink-0 mt-1" />}
+          </div>
+        </DropdownMenuItem>
+
+        <DropdownMenuItem
+          className="cursor-pointer py-2.5"
+          disabled={!battleMapCanRun}
+          onClick={handleGenerateBattleMap}
+        >
+          <div className="flex items-start gap-2.5 w-full">
+            <div className="mt-0.5 h-7 w-7 rounded-md bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center shrink-0">
+              <Target className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-1.5">
+                <p className="text-sm font-medium">作战图报告</p>
+                <span className="text-[10px] text-muted-foreground">
+                  {companyBattleMap?.variant_name_zh || 'Battle Map'}
+                </span>
+              </div>
+              <p className="text-[11px] text-muted-foreground leading-snug">
+                {battleMapCanRun
+                  ? '10 章作战方案 — 优先级、时间轴、升级承接'
+                  : '需先完成作战图问卷并生成分类'}
+              </p>
+            </div>
+            {!battleMapCanRun && <Lock className="h-3.5 w-3.5 text-muted-foreground shrink-0 mt-1" />}
+          </div>
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 
   if (isLoading) {
@@ -167,7 +297,8 @@ export default function ReportsPage({ params }: { params: Promise<{ id: string }
       <ReportGenerationOverlay
         open={overlayOpen}
         report={activeGenerating}
-        sectionLabels={DIAGNOSTIC_SECTION_LABELS}
+        sectionLabels={overlaySectionLabels}
+        title={overlayTitle}
       />
 
       {/* Header */}
@@ -183,7 +314,7 @@ export default function ReportsPage({ params }: { params: Promise<{ id: string }
             </p>
           </div>
         </div>
-        {sortedReports.length > 0 && <GenerateButton />}
+        {sortedReports.length > 0 && <GenerateMenu />}
       </div>
 
       {/* Empty state */}
@@ -195,7 +326,7 @@ export default function ReportsPage({ params }: { params: Promise<{ id: string }
             <p className="mt-1 mb-6 text-sm text-muted-foreground">
               Generate your first report based on completed diagnostics
             </p>
-            <GenerateButton />
+            <GenerateMenu />
           </CardContent>
         </Card>
       )}
@@ -219,16 +350,16 @@ export default function ReportsPage({ params }: { params: Promise<{ id: string }
                 {sortedReports.map((report) => {
                   const statusCfg = STATUS_CONFIG[report.status] || STATUS_CONFIG.draft;
                   const isGenerating = report.status === 'generating';
+                  const rowSectionLabels = sectionLabelsFor(report.report_type);
                   const doneKeys = new Set(report.sections_done_keys || []);
-                  const total = report.sections_total || DIAGNOSTIC_SECTION_LABELS.length;
+                  const total = report.sections_total || rowSectionLabels.length;
                   const done = report.sections_done || 0;
                   const percent = total > 0 ? Math.round((done / total) * 100) : 0;
-                  // For diagnostic reports we know the canonical section names,
-                  // so we can show "currently working on…". For other report
-                  // types we just show the count.
-                  const isDiagnostic = report.report_type === 'diagnostic';
-                  const inProgress = isDiagnostic
-                    ? DIAGNOSTIC_SECTION_LABELS.filter((s) => !doneKeys.has(s.key)).slice(0, 3)
+                  // We have canonical section names for diagnostic + battle_map;
+                  // for other types fall back to the count only.
+                  const hasNamedSections = report.report_type === 'diagnostic' || report.report_type === 'battle_map';
+                  const inProgress = hasNamedSections
+                    ? rowSectionLabels.filter((s) => !doneKeys.has(s.key)).slice(0, 3)
                     : [];
                   return (
                     <TableRow
@@ -256,18 +387,20 @@ export default function ReportsPage({ params }: { params: Promise<{ id: string }
                                 style={{ width: `${percent}%` }}
                               />
                             </div>
-                            {isDiagnostic && inProgress.length > 0 && (
+                            {hasNamedSections && inProgress.length > 0 && (
                               <p className="mt-1.5 text-[11px] text-muted-foreground">
                                 <span className="font-medium">Working on: </span>
                                 {inProgress.map((s) => s.label).join('、')}
-                                {DIAGNOSTIC_SECTION_LABELS.filter((s) => !doneKeys.has(s.key)).length > 3 && '…'}
+                                {rowSectionLabels.filter((s) => !doneKeys.has(s.key)).length > 3 && '…'}
                               </p>
                             )}
                           </div>
                         )}
                       </TableCell>
                       <TableCell>
-                        <Badge variant="secondary">
+                        <Badge
+                          className={TYPE_COLORS[report.report_type] || 'bg-gray-100 text-gray-800'}
+                        >
                           {TYPE_LABELS[report.report_type] || report.report_type}
                         </Badge>
                       </TableCell>
@@ -327,10 +460,12 @@ function ReportGenerationOverlay({
   open,
   report,
   sectionLabels,
+  title,
 }: {
   open: boolean;
   report: ReportSummary | null;
   sectionLabels: { key: string; label: string }[];
+  title: string;
 }) {
   // Lock body scroll while open
   useEffect(() => {
@@ -375,9 +510,7 @@ function ReportGenerationOverlay({
         </div>
 
         {/* Title */}
-        <h3 className="mb-1 text-center text-lg font-bold">
-          Generating Diagnostic Report
-        </h3>
+        <h3 className="mb-1 text-center text-lg font-bold">{title}</h3>
         <p className="mb-5 text-center text-xs text-muted-foreground">
           {report?.title || 'AI is analysing the diagnostic and writing each section'}
         </p>

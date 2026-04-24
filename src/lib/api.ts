@@ -159,6 +159,23 @@ export const api = {
     getReport: (id: string) =>
       fetchApi<any>(`/diagnostics/${id}/report`),
   },
+  battlemaps: {
+    createForDiagnostic: (diagnosticId: string) =>
+      fetchApi<any>(`/diagnostics/${diagnosticId}/battlemap`, { method: 'POST' }),
+    list: () => fetchApi<any[]>('/battlemaps'),
+    listMine: () => fetchApi<any[]>('/battlemaps/mine'),
+    get: (id: string) => fetchApi<any>(`/battlemaps/${id}`),
+    saveDraft: (id: string, data: { answers: Record<string, string | string[]>; other_answers?: Record<string, string> }) =>
+      fetchApi<any>(`/battlemaps/${id}/draft`, { method: 'PUT', body: JSON.stringify(data) }),
+    submitSection: (id: string, sectionKey: string, data: { answers: Record<string, string | string[]>; other_answers?: Record<string, string> }) =>
+      fetchApi<any>(`/battlemaps/${id}/sections/${sectionKey}/submit`, { method: 'POST', body: JSON.stringify(data) }),
+    submit: (id: string) =>
+      fetchApi<any>(`/battlemaps/${id}/submit`, { method: 'POST' }),
+    generateReport: (id: string) =>
+      fetchApi<any>(`/battlemaps/${id}/generate-report`, { method: 'POST' }),
+    getReport: (id: string) =>
+      fetchApi<any>(`/battlemaps/${id}/report`),
+  },
   assessments: {
     trigger: (companyId: string, stage: string) =>
       fetchApi<Assessment>(`/companies/${companyId}/assessments`, { method: 'POST', body: JSON.stringify({ stage }) }),
