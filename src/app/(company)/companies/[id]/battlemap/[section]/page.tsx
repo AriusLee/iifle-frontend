@@ -166,6 +166,71 @@ export default function BattleMapSectionPage({
         </Card>
       )}
 
+      {/* Customer answers — read-only list so the advisor can read the raw
+          responses alongside the AI analysis without flipping the form into
+          edit mode. Hidden while editing (the form above shows the state). */}
+      {isSectionSubmitted && !editing && (
+        <Card>
+          <CardContent className="pt-5 pb-4">
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+                  {t('客户回答', 'Customer Answers')}
+                </p>
+                <p className="text-sm font-semibold">
+                  {section.questions.length} {t('题', 'questions')}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setEditing(true)}
+                className="cursor-pointer text-xs font-medium text-emerald-700 hover:text-emerald-800 hover:underline"
+              >
+                {t('编辑回答 →', 'Edit answers →')}
+              </button>
+            </div>
+            <div className="divide-y">
+              {section.questions.map((q, idx) => {
+                const raw = existingAnswers[q.id] || '';
+                let display: string;
+                if (q.kind === 'open') {
+                  display = raw || t('— 未填写', '— not answered');
+                } else {
+                  // Resolve option value (stored as zh) to its localized label.
+                  const opt = getBattleMapOptions(q).find((o) => o.zh === raw);
+                  display = opt
+                    ? t(opt.zh, opt.en)
+                    : raw
+                      ? String(raw)
+                      : t('— 未填写', '— not answered');
+                }
+                return (
+                  <div key={q.id} className="py-3 first:pt-1 last:pb-1">
+                    <div className="flex items-start gap-2 mb-1.5">
+                      <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-slate-100 text-[10px] font-bold text-slate-500 shrink-0 mt-0.5">
+                        {idx + 1}
+                      </span>
+                      <p className="text-xs font-medium leading-snug text-muted-foreground">
+                        {t(q.zh, q.en)}
+                      </p>
+                    </div>
+                    <div
+                      className={
+                        q.kind === 'open'
+                          ? 'ml-7 text-sm leading-relaxed text-foreground whitespace-pre-wrap bg-slate-50 border border-slate-200 rounded-md px-3 py-2'
+                          : 'ml-7 text-sm font-medium text-foreground'
+                      }
+                    >
+                      {display}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Questions (hidden when submitted unless editing) */}
       {showQuestions ? (
         <Card>
