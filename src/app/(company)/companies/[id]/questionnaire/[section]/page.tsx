@@ -314,6 +314,18 @@ export default function QuestionnaireSectionPage({
                 const currentVal = answers[q.id] || '';
                 return (
                   <div key={q.id} className="py-3 first:pt-1">
+                    {q.groupHeader && (
+                      <div className={`${idx > 0 ? 'mt-1 pt-4 border-t border-emerald-200' : 'mb-3'} mb-3`}>
+                        <h3 className="text-sm font-bold text-emerald-700 mb-1 tracking-wide">
+                          {t(q.groupHeader.zh, q.groupHeader.en)}
+                        </h3>
+                        {(q.groupHeader.desc_zh || q.groupHeader.desc_en) && (
+                          <p className="text-[11px] leading-relaxed text-muted-foreground">
+                            {t(q.groupHeader.desc_zh ?? '', q.groupHeader.desc_en ?? q.groupHeader.desc_zh ?? '')}
+                          </p>
+                        )}
+                      </div>
+                    )}
                     <div className="flex items-start gap-2 mb-2">
                       <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-slate-100 text-[10px] font-bold text-slate-500 shrink-0 mt-0.5">
                         {idx + 1}

@@ -8,6 +8,14 @@ export interface Question {
   zh: string;
   en: string;
   options: QuestionOption[];
+  // Optional sub-section divider rendered above this question.
+  // Used inside Section E to separate equity-readiness from bank-loan-readiness.
+  groupHeader?: {
+    zh: string;
+    en: string;
+    desc_zh?: string;
+    desc_en?: string;
+  };
 }
 
 function o(zh: string, en: string): QuestionOption {
@@ -68,13 +76,149 @@ export const SECTIONS: Record<string, { title_zh: string; title_en: string; ques
     title_zh: '融资结构',
     title_en: 'Financing Structure',
     questions: [
-      { id: 'Q26', zh: '股权结构？', en: 'Equity structure?', options: [o('没有','None'), o('大致有但不清楚','Rough unclear'), o('基本清楚','Basically clear'), o('较清晰','Fairly clear'), o('非常清晰','Very clear')] },
+      {
+        id: 'Q26', zh: '股权结构？', en: 'Equity structure?',
+        groupHeader: {
+          zh: 'E1 · 股权资本就绪度',
+          en: 'E1 · Equity Capital Readiness',
+          desc_zh: '面向投资人的资本就绪度——VC、PE、战投、并购、上市路径。',
+          desc_en: 'Readiness for equity investors — VC, PE, strategic, M&A, listing pathways.',
+        },
+        options: [o('没有','None'), o('大致有但不清楚','Rough unclear'), o('基本清楚','Basically clear'), o('较清晰','Fairly clear'), o('非常清晰','Very clear')],
+      },
       { id: 'Q27', zh: '股东类型？', en: 'Shareholder type?', options: [o('全部创始人持有','All founder'), o('有历史口头安排','Historical verbal'), o('有少量外部股东','Some external'), o('有2轮以上投资人','2+ rounds investors'), o('有多轮投资人+员工持股计划','Multi-round + ESOP')] },
       { id: 'Q28', zh: '财务规范化？', en: 'Financial standardization?', options: [o('没有','None'), o('只有内部账','Internal only'), o('有基础财务报表','Basic statements'), o('有1年年度审计','1yr audit'), o('有2–3年审计/较规范财务体系','2–3yr audit')] },
       { id: 'Q29', zh: '资本动作意向？', en: 'Capital action intent?', options: [o('暂时不融资先经营','Operate first'), o('想梳理商业模式','Clarify model'), o('想做融资准备','Prepare fundraising'), o('想正式融资','Formally fundraise'), o('想做并购/被并购准备','M&A prep'), o('想走向上市路径','IPO path')] },
       { id: 'Q30', zh: '融资时间预期？', en: 'Fundraising timeline?', options: [o('1年后再看','After 1yr'), o('6–12个月','6–12mo'), o('3–6个月内','3–6mo'), o('已经在推进','Already in progress')] },
       { id: 'Q31', zh: '资本准备状态？', en: 'Capital readiness?', options: [o('还没开始准备','Not started'), o('有想法但没材料','Ideas no materials'), o('有基础资料但不完整','Basic incomplete'), o('已开始系统整理融资资料','Systematically organizing'), o('已能进入BP/路演准备','Ready for BP/roadshow')] },
       { id: 'Q32', zh: '融资最大障碍？', en: 'Biggest fundraising obstacle?', options: [o('团队不够','Team insufficient'), o('财务不规范','Financials not standard'), o('没有BP','No BP'), o('不会讲资本故事','Can\'t tell capital story'), o('缺乏投资人资源','Lack investor connections')] },
+      // ── E2 · SME Bank Loan Readiness (option strings must match SCORE_MAP) ──
+      {
+        id: 'Q36',
+        zh: '最新一年的税前利润 (PBT) 利润率？',
+        en: 'Latest annual profit-before-tax (PBT) margin?',
+        groupHeader: {
+          zh: 'E2 · SME 银行贷款就绪度',
+          en: 'E2 · SME Bank Loan Readiness',
+          desc_zh: '按银行 SME 贷款的五大核心准则评估：DSCR > 1.0x、资产负债率 < 3.0x、信用卡使用率 < 70%、营收利润上升、银行流水良好。',
+          desc_en: "Scored against the bank's 5 core SME-loan criteria: DSCR > 1.0x, gearing < 3.0x, credit-card utilisation < 70%, uptrend revenue/profit, healthy bank statements.",
+        },
+        options: [
+          o('亏损 / 负 PBT', 'Loss / negative PBT'),
+          o('盈亏平衡 (利润率 0–3%)', 'Break-even (margin 0–3%)'),
+          o('利润率 3–8%', 'Margin 3–8%'),
+          o('利润率 8–15%', 'Margin 8–15%'),
+          o('利润率 > 15%', 'Margin > 15%'),
+        ],
+      },
+      {
+        id: 'Q37',
+        zh: '董事个人信用卡使用率？(银行红线 > 70%)',
+        en: "Director's personal credit-card utilisation? (bank red-line > 70%)",
+        options: [
+          o('> 70% (银行不接受)', '> 70% (bank rejects)'),
+          o('50–70%', '50–70%'),
+          o('30–50%', '30–50%'),
+          o('10–30%', '10–30%'),
+          o('< 10% 或不使用信用卡', '< 10% or no credit-card use'),
+        ],
+      },
+      {
+        id: 'Q38',
+        zh: '公司或董事是否有正在进行的法律诉讼？',
+        en: 'Any ongoing legal cases against the company or directors?',
+        options: [
+          o('是，公司和董事都有', 'Yes — company and directors'),
+          o('是，仅公司有', 'Yes — company only'),
+          o('是，仅董事个人有', 'Yes — director only'),
+          o('历史上有但已结案', 'Past cases, all resolved'),
+          o('完全没有', 'None at all'),
+        ],
+      },
+      {
+        id: 'Q39',
+        zh: '公司注册成立至今多少年？(银行最低要求 > 1 年)',
+        en: 'Years since company incorporation? (bank minimum > 1 year)',
+        options: [
+          o('< 1 年 (低于银行最低要求)', '< 1 year (below bank minimum)'),
+          o('1–2 年', '1–2 years'),
+          o('2–3 年', '2–3 years'),
+          o('3–5 年', '3–5 years'),
+          o('> 5 年', '> 5 years'),
+        ],
+      },
+      {
+        id: 'Q40',
+        zh: '公司银行月结单平均月末余额（占月入百分比）？(银行偏好 5–20%)',
+        en: 'Average month-end bank balance as % of monthly deposits? (bank prefers 5–20%)',
+        options: [
+          o('几乎为零或负 (经常透支)', 'Near zero or negative (often overdrawn)'),
+          o('< 5% 月入', '< 5% of monthly deposits'),
+          o('5–10% 月入', '5–10% of monthly deposits'),
+          o('10–20% 月入 (银行偏好区间)', '10–20% (bank sweet spot)'),
+          o('> 20% 月入', '> 20% of monthly deposits'),
+        ],
+      },
+      {
+        id: 'Q41',
+        zh: '公司总借贷相对股东权益的比率（资产负债率）？(银行红线 > 3.0x)',
+        en: 'Total borrowings ÷ shareholder equity (gearing ratio)? (bank red-line > 3.0x)',
+        options: [
+          o('> 3.0x (违反银行准则)', '> 3.0x (fails bank gearing test)'),
+          o('2.0–3.0x', '2.0–3.0x'),
+          o('1.0–2.0x', '1.0–2.0x'),
+          o('0.5–1.0x', '0.5–1.0x'),
+          o('< 0.5x 或无借贷', '< 0.5x or debt-free'),
+        ],
+      },
+      {
+        id: 'Q42',
+        zh: 'EBITDA ÷ 年度借贷偿还总额 (DSCR)？(银行红线 < 1.0x)',
+        en: 'EBITDA ÷ annual borrowing commitments (DSCR)? (bank red-line < 1.0x)',
+        options: [
+          o('< 1.0x (无法覆盖偿债)', '< 1.0x (cannot cover debt)'),
+          o('1.0–1.25x (勉强覆盖)', '1.0–1.25x (barely covers)'),
+          o('1.25–1.5x', '1.25–1.5x'),
+          o('1.5–2.0x', '1.5–2.0x'),
+          o('> 2.0x (强偿债能力)', '> 2.0x (strong)'),
+        ],
+      },
+      {
+        id: 'Q43',
+        zh: '公司最新股东权益 (Shareholder Equity)？',
+        en: "Company's latest shareholder equity?",
+        options: [
+          o('负值 (技术性资不抵债)', 'Negative (technically insolvent)'),
+          o('< RM 50 万', '< RM 500K'),
+          o('RM 50 万 – 200 万', 'RM 500K – 2M'),
+          o('RM 200 万 – 1000 万', 'RM 2M – 10M'),
+          o('> RM 1000 万', '> RM 10M'),
+        ],
+      },
+      {
+        id: 'Q44',
+        zh: '现有借贷的还款记录？(银行核查 CCRIS)',
+        en: 'Repayment record on existing borrowings? (bank checks CCRIS)',
+        options: [
+          o('经常迟缴 / CCRIS 不良记录', 'Frequent late / CCRIS adverse'),
+          o('近 12 个月内有迟缴', 'Late payment within last 12 months'),
+          o('近 12 个月无迟缴，更早曾有', '12 months clean, older history of late'),
+          o('近 24 个月无迟缴', '24 months clean'),
+          o('从未迟缴', 'Never late'),
+        ],
+      },
+      {
+        id: 'Q45',
+        zh: '近 2–3 年公司营收和利润趋势？(银行要求上升或稳定)',
+        en: 'Revenue & profit trend over the past 2–3 years? (bank requires uptrend or stable)',
+        options: [
+          o('双双下降', 'Both declining'),
+          o('波动较大，无明显趋势', 'Volatile, no clear trend'),
+          o('大致持平', 'Roughly flat'),
+          o('稳定增长', 'Stable growth'),
+          o('持续高速增长', 'Strong sustained growth'),
+        ],
+      },
     ],
   },
   f: {
