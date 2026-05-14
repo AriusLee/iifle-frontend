@@ -30,11 +30,11 @@ export const SECTIONS: Record<string, { title_zh: string; title_en: string; ques
       { id: 'Q01', zh: '你的企业目前成立多久？', en: 'How long has your enterprise been established?', options: [o('还未正式开始','Not yet started'), o('0–1年','0–1 year'), o('1–3年','1–3 years'), o('3–5年','3–5 years'), o('5年以上','5+ years')] },
       { id: 'Q02', zh: '创始人在本行业累计经验？', en: "Founder's cumulative industry experience?", options: [o('0–1年','0–1 year'), o('1–3年','1–3 years'), o('3–5年','3–5 years'), o('5–10年','5–10 years'), o('10年以上','10+ years')] },
       { id: 'Q03', zh: '行业类别？', en: 'Industry category?', options: [o('消费零售','Consumer Retail'), o('餐饮连锁','F&B Chain'), o('制造业','Manufacturing'), o('服务业','Services'), o('SaaS/科技','SaaS/Tech'), o('教育/培训','Education'), o('医疗/健康','Healthcare'), o('平台/交易撮合','Platform/Marketplace')] },
-      { id: 'Q04', zh: '年营收区间？', en: 'Annual revenue range?', options: [o('还没有稳定营收','No stable revenue'), o('100万以下','Below 1M'), o('100万–500万','1M–5M'), o('500万–3000万','5M–30M'), o('3000万–1亿','30M–100M'), o('1亿以上','Above 100M')] },
+      { id: 'Q04', zh: '年营收区间？', en: 'Annual revenue range?', options: [o('5M 以下','Below 5M'), o('5M–10M','5M–10M'), o('10M–30M','10M–30M'), o('30M–50M','30M–50M'), o('50M–100M','50M–100M'), o('100M 以上','Above 100M')] },
       { id: 'Q05', zh: '经营利润状态？', en: 'Profit status?', options: [o('还在亏损','Still losing money'), o('偶尔盈利','Occasional profit'), o('已经能稳定成交','Stable transactions'), o('持续稳定盈利','Consistent profit'), o('盈利能力较强','Strong profitability')] },
       { id: 'Q06', zh: '团队规模？', en: 'Team size?', options: [o('5人以下','Below 5'), o('6–10人','6–10'), o('11–30人','11–30'), o('31–100人','31–100'), o('101–300人','101–300'), o('300人以上','300+')] },
       { id: 'Q07', zh: '经营状态？', en: 'Business state?', options: [o('还在试模式','Testing model'), o('已经能稳定成交','Stable transactions'), o('正在扩张','Expanding'), o('正在准备融资/资本动作','Preparing capital action')] },
-      { id: 'Q08', zh: '企业更大目标？', en: 'Biggest goal?', options: [o('先活下来','Survive'), o('先稳定盈利','Stabilize profit'), o('先复制扩张','Replicate & expand'), o('先做高估值逻辑','Build valuation'), o('先进入融资/资本路径','Enter capital path')] },
+      { id: 'Q08', zh: '企业更大目标？', en: 'Biggest goal?', options: [o('先活下来','Survive'), o('先稳定盈利','Stabilize profit'), o('先复制扩张','Replicate & expand'), o('先做高估值逻辑','Build valuation'), o('先进入融资/资本路径','Enter capital path'), o('准备规划上市路径','Plan IPO pathway')] },
     ],
   },
   b: {
@@ -53,6 +53,7 @@ export const SECTIONS: Record<string, { title_zh: string; title_en: string; ques
     title_en: 'Business Model Structure',
     questions: [
       { id: 'Q14', zh: '收入来源？', en: 'Revenue source?', options: [o('单次交易','One-time'), o('长期复购','Repeat purchase'), o('订阅/月费','Subscription'), o('项目制收入','Project-based'), o('平台抽成','Platform commission'), o('多种收入组合','Multiple revenue mix')] },
+      { id: 'Q46', zh: '客户类型？', en: 'Customer type?', options: [o('B2B（企业客户为主）','B2B (enterprise customers)'), o('B2C（个人消费者为主）','B2C (individual consumers)'), o('B2B + B2C（双线并行）','B2B + B2C (both)'), o('B2G（政府/公共部门为主）','B2G (government/public sector)')] },
       { id: 'Q15', zh: '复制成功率？', en: 'Replication success?', options: [o('很低几乎靠人','Very low'), o('有机会但不稳定','Possible unstable'), o('中等部分可复制','Medium partial'), o('较高已有初步方法','High initial methods'), o('很高已有成熟SOP','Very high mature SOP')] },
       { id: 'Q16', zh: '成交标准化？', en: 'Sales standardization?', options: [o('基本没有','None'), o('有一些经验但不稳定','Some unstable'), o('有基础流程','Basic process'), o('已有可训练SOP','Trainable SOP'), o('已能复制给不同团队','Replicable to teams')] },
       { id: 'Q17', zh: '交付独立性？', en: 'Delivery independence?', options: [o('不能','Cannot'), o('较难','Difficult'), o('一部分可以','Partially'), o('大部分可以','Mostly'), o('基本完全可以','Basically fully')] },
@@ -225,9 +226,9 @@ export const SECTIONS: Record<string, { title_zh: string; title_en: string; ques
     title_zh: '退出与上市结构',
     title_en: 'Exit & IPO Structure',
     questions: [
-      { id: 'Q33', zh: '退出方向？', en: 'Exit direction?', options: [o('长期经营不谈退出','Long-term no exit'), o('未来股权交易','Equity transaction'), o('未来兼并收购','M&A'), o('未来融资后再退出','Fundraise then exit'), o('未来上市退出','IPO exit')] },
+      { id: 'Q33', zh: '退出方向？', en: 'Exit direction?', options: [o('长期经营不谈退出','Long-term no exit'), o('未来股权交易','Equity transaction'), o('未来兼并收购','M&A'), o('未来融资后再退出','Fundraise then exit'), o('未来美国上市','US IPO'), o('未来马来西亚上市','Malaysia IPO'), o('未来香港上市','Hong Kong IPO')] },
       { id: 'Q34', zh: '上市准备状态？', en: 'IPO readiness?', options: [o('还非常早不应现在讨论','Very early'), o('先把经营和模式跑顺','Fix operations first'), o('可以开始补治理/财务/股权基础','Start governance'), o('可以开始做上市前体检','Pre-IPO checkup'), o('已开始认真思考上市路径','Seriously considering IPO')] },
-      { id: 'Q35', zh: '报告期望？（多选最多2项）', en: 'Report focus? (multi-select max 2)', options: [o('看清企业卡在哪','See bottlenecks'), o('看清能不能复制扩张','Replication potential'), o('看清有没有融资可能','Fundraising potential'), o('看清有没有高估值潜力','Valuation potential'), o('看清能不能进入BP/路演阶段','BP/roadshow readiness'), o('看清未来上市路径','IPO path')] },
+      { id: 'Q35', zh: '报告期望？（多选）', en: 'Report focus? (multi-select)', options: [o('看清企业卡在哪','See bottlenecks'), o('看清能不能复制扩张','Replication potential'), o('看清有没有融资可能','Fundraising potential'), o('看清有没有高估值潜力','Valuation potential'), o('看清能不能进入BP/路演阶段','BP/roadshow readiness'), o('看清未来上市路径','IPO path')] },
     ],
   },
 };
